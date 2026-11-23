@@ -9,7 +9,7 @@ description: Map the system's C4 containers and the components inside the contai
 
 In Claude Code, use the current repository. In Claude chat there is no checkout: ask for the repository as a .zip (GitHub: **Code → Download ZIP**) or use a connected GitHub tool, unpack it into your working directory, pass that folder to the script with `--root <folder>`, and hand back the files you wrote as a .zip to commit.
 
-The script is bundled with this skill: `<skill folder>` below is the folder this SKILL.md is in.
+The script is bundled with this skill: `<skill folder>` below is the folder this SKILL.md is in (if it has no `scripts/` folder, use `${CLAUDE_PLUGIN_ROOT}` instead).
 
 ## 1. Read
 
@@ -55,13 +55,11 @@ Rules:
 
 ## 3. Check and write the pages
 
-Check your map: every path exists, `componentView.container` is one of the container ids, each feature has exactly one component. Then:
-
 ```bash
-node "<skill folder>/scripts/agentforge.mjs" write-architecture
+node "<skill folder>/scripts/agentforge.mjs" check-architecture
 ```
 
-It writes `docs/architecture/c4-containers.md` and the components page as drafts with Mermaid diagrams. Fix what it reports, at most two rounds.
+It checks every path against the repository, that the component view zooms into a real container, and that each feature has one component holding only its own code. It sets the map's status and writes `docs/architecture/c4-containers.md` and the components page with Mermaid diagrams, removing a components page for a container the view no longer zooms into. Fix what it reports, at most two rounds.
 
 ## 4. Report
 

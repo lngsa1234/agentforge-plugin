@@ -11,7 +11,7 @@ The baseline is the one product-level document. Feature specs say what each feat
 
 In Claude Code, use the current repository. In Claude chat there is no checkout: ask for the repository as a .zip (GitHub: **Code → Download ZIP**) or use a connected GitHub tool, unpack it into your working directory, pass that folder to the script with `--root <folder>`, and hand back the files you wrote as a .zip to commit. Skip steps that need git history if there is no `.git`.
 
-The script is bundled with this skill: `<skill folder>` below is the folder this SKILL.md is in.
+The script is bundled with this skill: `<skill folder>` below is the folder this SKILL.md is in (if it has no `scripts/` folder, use `${CLAUDE_PLUGIN_ROOT}` instead).
 
 ## 1. Gather
 
@@ -63,18 +63,16 @@ The script is bundled with this skill: `<skill folder>` below is the folder this
 - **PRD** (omit the whole `prd` object when there is none): one entry per requirement the PRD states, in your words, with `source` saying where in the PRD it is (section, heading or page). `status` is `built`, `partial` or `not_built`, judged from the feature map and specs, and `features` lists the feature ids that build it. Never mark a requirement built without naming the feature.
 - **Open questions:** gaps and conflicts the user should decide — PRD and code disagreeing, a journey that stops halfway.
 
-Write only the `document` object; the script adds the rest.
+Write only the `document` object; the check adds the rest.
 
-## 3. Write the page
-
-Before running it, check your own work: each journey has at least three steps and crosses at least two features, only agent steps carry `approval`, and every PRD requirement marked built or partial names the feature that builds it.
+## 3. Check
 
 ```bash
-node "<skill folder>/scripts/agentforge.mjs" write-baseline
+node "<skill folder>/scripts/agentforge.mjs" check-baseline
 ```
 
-It reports journey steps and PRD requirements that name features the map doesn't have, and writes `docs/product/baseline.md` as a draft, with each feature linked to its spec. Fix what it reports and run it again — at most two rounds.
+It checks that every journey step names a feature in the map, that each journey crosses at least two features, and that PRD requirements cite real features; it sets the baseline's status and writes `docs/product/baseline.md`, with each feature linked to its spec. Fix what it reports and run it again — at most two rounds.
 
 ## 4. Report
 
-Summarize: the journeys (one line each), how many features they cover, and with a PRD, how much of it is built and what is built but not in the PRD. Offer the `feature-spec` skill for features on a P1 journey that have no spec yet.
+Summarize: the journeys (one line each), how many features they cover, and with a PRD, how much of it is built and what is built but not in the PRD. Offer the `feature-spec` skill for features on a P1 journey whose spec isn't complete.

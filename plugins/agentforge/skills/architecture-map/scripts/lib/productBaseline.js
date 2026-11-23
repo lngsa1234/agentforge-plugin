@@ -1,9 +1,12 @@
-// The product baseline (.agentforge/product-baseline.json): one document, in
+// The product baseline: one document, in
 // one shape, that says what the product is today. Maya writes it from the feature map
 // and the code, and from the customer's PRD when there is one — whatever shape that PRD
 // is in. It holds what no single feature spec can: who the product is for, the journeys
 // that run across several features, and, with a PRD, what the PRD asks for against what
-// is built. The model writes; this module formats it.
+// is built. The model writes; this module decides whether the baseline holds together.
+//
+// Pure, with no imports, so the Claude Code plugin can bundle it unchanged
+// (plugins/agentforge/scripts/lib, kept identical by a test).
 
 export const PRIORITIES = Object.freeze(['P1', 'P2', 'P3'])
 export const ALIGNMENT = Object.freeze(['built', 'partial', 'not_built'])
@@ -49,6 +52,50 @@ export function normalizeBaseline(result) {
     journeys,
     openQuestions: strings(result?.openQuestions),
   }
+}
+
+// Check the baseline against the feature map. Problems block it from being complete:
+// an empty summary or user list; a journey with fewer than three steps, a step naming a
+// feature the map doesn't have, a journey through only one feature (that is the
+// feature's own scenario), or an approval on a step that isn't the agent's; a PRD
+// requirement called built or partial with no feature, or citing one the map doesn't
+// have. Coverage — features in no journey, built features the PRD never mentions — is
+// reported, not a problem: not every feature is on a journey.
+export function checkBaseline(baseline, features) {
+  const live = (Array.isArray(features) ? features : []).filter(feature => feature?.status !== 'removed' && feature?.status !== 'deprecated')
+  const known = new Map(live.map(feature => [featureKey(feature.id) || slugify(feature.name), feature]))
+  const problems = []
+  if (!baseline.product.summary) problems.push('The product summary is empty: say in two or three sentences what the product is and who it is for.')
+  if (!baseline.product.users.length) problems.push('No users are named: list who uses the product and what each needs from it.')
+  if (live.length >= 2 && baseline.journeys.length === 0) problems.push('No journeys: write the end-to-end journeys a user takes through the product, each across several features.')
+  for (const journey of baseline.journeys) {
+    const issues = []
+    if (!journey.title) issues.push('has no title')
+    if (!journey.goal) issues.push('has no user goal')
+    if (journey.steps.length < 3) issues.push('needs at least three steps')
+    const unknown = [...new Set(journey.steps.map(step => step.feature).filter(key => key && !known.has(key)))]
+    if (unknown.length) issues.push(`names ${unknown.length === 1 ? 'a feature' : 'features'} not in the feature map (${unknown.join(', ')})`)
+    const touched = new Set(journey.steps.map(step => step.feature).filter(key => known.has(key)))
+    if (journey.steps.length >= 3 && !unknown.length && touched.size < 2) issues.push('runs through only one feature; make it a scenario in that feature’s spec')
+    if (journey.steps.some(step => step.approval && step.actor !== 'agent')) issues.push('marks a step that is not the agent’s as needing approval')
+    if (issues.length) problems.push(`${journey.id} ${issues.join(', ')}.`)
+  }
+  for (const item of baseline.prd?.requirements || []) {
+    const unknown = item.features.filter(key => !known.has(key))
+    if (unknown.length) problems.push(`${item.id} cites ${unknown.length === 1 ? 'a feature' : 'features'} not in the feature map (${unknown.join(', ')}).`)
+    else if (item.status !== 'not_built' && item.features.length === 0) problems.push(`${item.id} is marked ${item.status.replace('_', ' ')} but names no feature that builds it.`)
+  }
+  const onJourney = new Set(baseline.journeys.flatMap(journey => journey.steps.map(step => step.feature)))
+  const inPrd = new Set((baseline.prd?.requirements || []).flatMap(item => item.features))
+  const coverage = {
+    features: live.length,
+    onJourney: [...known.keys()].filter(key => onJourney.has(key)).length,
+    notOnJourney: [...known.entries()].filter(([key]) => !onJourney.has(key)).map(([, feature]) => feature.name),
+    prdRequirements: baseline.prd?.requirements.length || 0,
+    prdBuilt: (baseline.prd?.requirements || []).filter(item => item.status === 'built').length,
+    notInPrd: baseline.prd ? [...known.entries()].filter(([key, feature]) => !inPrd.has(key) && feature.status !== 'partial').map(([, feature]) => feature.name) : [],
+  }
+  return { passed: problems.length === 0, problems, coverage }
 }
 
 // The doc viewer's heading anchors (repoDocs.headingSlug), so the journey table links land.
@@ -118,7 +165,7 @@ export function baselineMarkdown(baseline, features, { checked = null, writtenAt
   const nameOf = (key) => byKey.get(key)?.name || key
   const live = [...byKey.values()].filter(feature => feature.status !== 'removed' && feature.status !== 'deprecated')
   const actorName = (journey, actor) => (actor === 'user' ? journey.user || 'User' : actor === 'agent' ? name : 'System')
-  const SPEC_WORDS = { complete: '✓ Checked against the code', draft: 'Draft', in_progress: 'In progress', not_checked: 'Written, not checked yet', not_started: 'Not written yet' }
+  const SPEC_WORDS = { complete: '✓ Checked against the code', in_progress: 'In progress', not_checked: 'Written, not checked yet', not_started: 'Not written yet' }
   const specWords = (feature) => SPEC_WORDS[feature.spec?.status] || SPEC_WORDS.not_started
   const out = ['---', `title: ${name} — product baseline`, 'type: Product baseline', 'owner: Product Manager (Maya)', `status: ${checked ? (checked.passed ? 'Checked' : 'Needs review') : 'Draft'}`, '---', '', `# ${name}: product baseline`, '']
   out.push(`_What the product is today, written by Maya from the code${baseline.prd ? ` and the PRD (\`${baseline.prd.path || 'provided'}\`)` : ''}${writtenAt ? ` on ${writtenAt.slice(0, 10)}` : ''}. Each feature's detail is in its spec._`, '')
@@ -130,7 +177,7 @@ export function baselineMarkdown(baseline, features, { checked = null, writtenAt
     `**${baseline.product.users.length}** user${baseline.product.users.length === 1 ? '' : 's'}`,
     `**${baseline.journeys.length}** journeys${baseline.journeys.length ? ` (${['P1', 'P2', 'P3'].map(priority => byPriority(priority) && `${byPriority(priority)} ${priority}`).filter(Boolean).join(', ')})` : ''}`,
     `**${live.length}** features`,
-    `specs: **${specCount('draft') + specCount('complete') + specCount('in_progress') + specCount('not_checked')}** written, ${specCount('not_started')} not written`,
+    `specs: **${specCount('complete')}** checked against the code, ${specCount('in_progress') + specCount('not_checked')} in progress, ${specCount('not_started')} not written`,
   ]
   if (baseline.prd?.requirements.length) glance.push(`PRD: **${baseline.prd.requirements.filter(item => item.status === 'built').length}** of ${baseline.prd.requirements.length} requirements built`)
   out.push(`**At a glance:** ${glance.join(' · ')}`, '')

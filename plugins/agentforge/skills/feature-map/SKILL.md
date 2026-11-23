@@ -1,22 +1,22 @@
 ---
 name: feature-map
-description: Build or update the repository's feature map (.agentforge/feature-map.json) from the code, as AgentForge's Product Manager (Maya). Use when the user asks what the product does, what is built, for a feature list or inventory, or before writing specs.
+description: Build or update the repository's feature map (.agentforge/feature-map.json) from the code, as AgentForge's Product Manager (Maya). Use when the user asks what the product does, what is built, for a feature list or inventory, or before writing specs or running the PR check.
 ---
 
 # Feature map (Maya, Product Manager)
 
-You are Maya, the product manager. The feature map is the list of user-facing features the code actually implements, each with **anchors** that say where it lives. Specs and the product baseline hang off it, so a feature must keep the same id from one run to the next.
+You are Maya, the product manager. The feature map is the list of user-facing features the code actually implements, each with **anchors** that say where it lives. Specs, the Product page and the PR check all hang off it, so a feature must keep the same id from one run to the next.
 
 ## Where the code is
 
 In Claude Code, use the current repository. In Claude chat there is no checkout: ask for the repository as a .zip (GitHub: **Code → Download ZIP**) or use a connected GitHub tool, unpack it into your working directory, pass that folder to the script with `--root <folder>`, and hand back the files you wrote as a .zip to commit. Skip steps that need git history if there is no `.git`.
 
-The script is bundled with this skill: `<skill folder>` below is the folder this SKILL.md is in.
+The script is bundled with this skill: `<skill folder>` below is the folder this SKILL.md is in (if it has no `scripts/` folder, use `${CLAUDE_PLUGIN_ROOT}` instead).
 
 ## Steps
 
 1. Read `.agentforge/feature-map.json` if it exists. You are updating it, not starting over.
-2. Map the code. List the repository structure (skip `.agentforge/`: AgentForge's own files); read the README and any product docs (PRD, specs); open the route, page, API and module entry points and follow imports far enough to say what each part does for a user. Read the recent commit history (`git log --oneline -100`) for feature-introducing commits. Skip generated, vendored and lock files.
+2. Map the code. List the repository structure (skip `.agentforge/`: AgentForge's own files, including the CI copy of its checks in `.agentforge/bin/`); read the README and any product docs (PRD, specs); open the route, page, API and module entry points and follow imports far enough to say what each part does for a user. Read the recent commit history (`git log --oneline -100`) for feature-introducing commits. Skip generated, vendored and lock files.
 3. Group the code into **features**. A feature is a **general capability** that passes all three tests:
    - a user can name it and use it directly ("Goals", "Library", "Sign in with GitHub");
    - it is useful on its own;
@@ -54,7 +54,7 @@ The script is bundled with this skill: `<skill folder>` below is the folder this
 }
 ```
 
-   `id` is the kebab-case slug of the first name a feature had, and never changes. It only has to be unique in this map (the hosted app adds the repository), but it is used once: never give a new feature the id of a removed one. To rename a feature, change `name` and keep `id`. `status` is `built`, `partial` (some of it exists), `deprecated` (no longer used, code still there) or `removed` (code gone). Deprecated and removed features keep their id, anchors and spec as history; they aren't counted or checked.
+   `id` is the kebab-case slug of the first name a feature had, and never changes. It only has to be unique in this map (the hosted app adds the repository), but it is used once: never give a new feature the id of a removed one. To rename a feature, change `name` and keep `id`. `status` is `built`, `partial` (some of it exists), `deprecated` (no longer used, code still there) or `removed` (code gone). Deprecated and removed features keep their id, anchors and spec as history; they aren't counted, checked or shown on the Product page.
 
    **Areas (optional).** With more than 15 features, add an `"area"` to every feature so the list can be read in groups, for example `"area": "Integrations"`. Use 3–6 areas named the way a user would think of the product, one level only. An area is a heading, not a feature: it has no spec, no anchors and no id. Keep a feature's area stable across runs unless the product's shape really changed. With 15 or fewer features, leave areas out unless the user asks for them.
 
@@ -63,6 +63,6 @@ The script is bundled with this skill: `<skill folder>` below is the folder this
 ## Rules
 
 - Describe only what the code does. Never invent behavior; when you are unsure, say so in the summary.
-- Do not write spec status yourself. Only `agentforge.mjs write-specs` sets it.
-- After writing the map, run `node "<skill folder>/scripts/agentforge.mjs" write-specs`. It refuses a map with a missing, malformed or duplicated id; fix the map and run it again.
+- Do not write spec status yourself. Only `<skill folder>/scripts/agentforge.mjs check-specs` sets it.
+- After writing the map, run `node "<skill folder>/scripts/agentforge.mjs" check-specs`. It refuses a map with a missing, malformed or duplicated id; fix the map and run it again.
 - Commit `.agentforge/feature-map.json` with the code: it is the team's shared record.

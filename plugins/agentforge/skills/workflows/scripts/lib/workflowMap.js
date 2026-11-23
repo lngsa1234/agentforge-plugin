@@ -1,6 +1,7 @@
-// Alex's workflow maps (.agentforge/workflows.json): the product's main runtime flows,
-// step by step. The model writes them; this module normalizes them (ids made unique,
-// feature links kept to known features) and formats the pages.
+// Alex's workflow maps: the connected product's main runtime
+// flows, step by step. The model proposes them; code keeps what holds up — a step's
+// paths are checked against the repository tree (a step with none of its code found is
+// marked unconfirmed), ids are made unique, and feature links must name a known feature.
 
 export const ACTORS = ['user', 'agent', 'client', 'server', 'data', 'external']
 export const ACTOR_NAMES = { user: 'User', agent: 'Agent', client: 'Client', server: 'Server', data: 'Data', external: 'External' }

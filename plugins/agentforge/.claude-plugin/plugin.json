@@ -1,13 +1,23 @@
 {
   "name": "agentforge",
   "displayName": "AgentForge",
-  "version": "0.4.0",
-  "description": "An AI product manager and technical lead for your repo: a feature map and draft specs written from the code, a product baseline with user journeys, an architecture overview with C4 diagrams, workflows and decision records, requirements and impact-rated technical plans, and acceptance criteria linked to the tests that check them. Runs on your own Claude Code subscription.",
+  "version": "0.9.0",
+  "description": "An AI product manager, technical lead and QA engineer for your repo: a feature map and specs written from the code with every citation verified, acceptance criteria linked to tests that are run, an architecture overview with C4 diagrams, workflows and decision records, and spec-drift and architecture checks before you open a PR. Runs on your own Claude subscription.",
   "author": {
     "name": "Ling",
     "url": "https://github.com/lngsa1234"
   },
   "repository": "https://github.com/lngsa1234/agentforge-plugin",
-  "license": "MIT",
-  "keywords": ["product-management", "specs", "architecture", "adr", "c4", "feature-map", "user-journeys"]
+  "keywords": [
+    "adr",
+    "architecture",
+    "c4",
+    "feature-map",
+    "product-management",
+    "pull-requests",
+    "qa",
+    "specs",
+    "user-journeys"
+  ],
+  "license": "MIT"
 }

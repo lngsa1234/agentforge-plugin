@@ -1,8 +1,8 @@
 # AgentForge for Claude Code
 
-An AI product manager (Maya), technical lead (Alex) and QA engineer (Priya) for your repository. They read your code and write the product and architecture docs your team keeps meaning to write: a feature map, feature specs, user journeys, C4 diagrams, workflows and decision records.
+An AI product manager (Maya), technical lead (Alex) and QA engineer (Priya) for your repository. They read your code and write the docs your team keeps meaning to write: a feature map, feature specs, user journeys, C4 diagrams, workflows and decision records. Then code checks them: every acceptance criterion's quote is verified against the file it cites, and the tests linked to each criterion are run.
 
-It runs on your own Claude Code subscription. No server, no API key, no account.
+It runs on your own Claude subscription. No server, no API key, no account.
 
 ## Install
 
@@ -15,43 +15,63 @@ It runs on your own Claude Code subscription. No server, no API key, no account.
 
 Then restart Claude Code, or run `/reload-plugins`.
 
-**Claude on the web, desktop or mobile:** on claude.ai or in the desktop app, open **Customize → Plugins**, select **Add marketplace**, enter `lngsa1234/agentforge-plugin`, and install **AgentForge**. The plugin is saved to your account, so its skills are also available in chat on your phone and in Claude Code when you sign in with the same account. Code execution must be on.
-
-In chat there is no checkout of your repository: attach it as a .zip (on GitHub, **Code → Download ZIP**) or connect GitHub. Claude writes the docs and gives them back as a .zip for you to commit. The session-start reminder below only runs in Claude Code.
+**Claude on the web, desktop or mobile:** on claude.ai or in the desktop app, open **Customize → Plugins**, select **Add marketplace**, enter `lngsa1234/agentforge-plugin`, and install **AgentForge**. The plugin is saved to your account, so its skills also work in chat on your phone and in Claude Code with the same account. Code execution must be on. Chat has no checkout of your repository: attach it as a .zip (on GitHub, **Code → Download ZIP**) or connect GitHub, and Claude gives the docs back as a .zip to commit. The hooks, `pr-check` and `setup-github` need Claude Code.
 
 ## What it does
 
 | Skill | Role | What you get |
 |---|---|---|
 | `/agentforge:feature-map` | Maya | `.agentforge/feature-map.json`: every user-facing feature the code implements, with anchors saying where it lives |
-| `/agentforge:feature-spec` | Maya | `docs/specs/<feature>.md` written from the code, each acceptance criterion citing the lines it rests on, with step-by-step scenarios |
-| `/agentforge:product-baseline` | Maya | `docs/product/baseline.md`: who the product is for, the journeys across features as swimlane diagrams, and, if you have a PRD in any format, what it asks for against what's built |
+| `/agentforge:feature-spec` | Maya | `docs/specs/<feature>.md` written from the code; each acceptance criterion cites the lines it rests on, and the check verifies every quote |
+| `/agentforge:product-baseline` | Maya | `docs/product/baseline.md`: who the product is for, the journeys across features, and, if you have a PRD in any format, what it asks for against what's built |
 | `/agentforge:work-item` | Maya | A request turned into a typed work item (feature, bug, chore or question) with testable acceptance criteria; questions only when it's unclear |
-| `/agentforge:architecture` | Alex | `docs/architecture/README.md`: how the system is built, the rules the code must keep, and links to the pages below. Ask for "the architecture" and it runs the three below first |
-| `/agentforge:architecture-map` | Alex | The C4 container and component diagrams in `docs/architecture/` |
-| `/agentforge:workflows` | Alex | The main runtime flows as sequence diagrams in `docs/architecture/workflows/` |
+| `/agentforge:qa` | Priya | Each acceptance criterion linked to the tests that check it, then run: every feature's QA status, failing tests and untested criteria |
+| `/agentforge:architecture` | Alex | `docs/architecture/README.md`: how the system is built and the rules the code must keep. Ask for "the architecture" and it runs the three below first |
+| `/agentforge:architecture-map` | Alex | The C4 container and component diagrams in `docs/architecture/`, every path checked |
+| `/agentforge:workflows` | Alex | The main runtime flows as sequence diagrams in `docs/architecture/workflows/`, every cited file checked |
 | `/agentforge:decision-records` | Alex | The decisions already in effect in `docs/adr/`, each naming the code it governs |
-| `/agentforge:qa` | Priya | Each acceptance criterion linked to the tests that check it: every spec page shows which criteria have a test and which don't |
 | `/agentforge:tech-plan` | Alex | The smallest reversible plan, impact rated none / minor / major, a decision record when major |
+| `/agentforge:pr-check` | Both | Spec drift and architecture checks on your branch before you open a PR |
+| `/agentforge:refresh-docs` | Both | The feature map, specs and architecture docs brought up to date in one unattended pass |
+| `/agentforge:setup-github` | — | A GitHub workflow: the checks and QA on every pull request, and the docs refreshed after each merge |
 
-You don't have to name the skills. Claude picks them up when you ask for what they do: "what features does this app have?", "spec the checkout feature", "how is this system built?", "plan this change".
+You don't have to name the skills. Claude picks them up when you ask for what they do: "what features does this app have?", "spec the checkout feature", "are the goals criteria tested?", "is this branch OK to PR?".
 
-In Claude Code, when a session starts in a repository with no feature map, missing specs or no architecture overview, Claude knows and mentions it once. To turn that off, add `.agentforge/config.json` with `{ "hooks": { "sessionStart": false } }`, or set `AGENTFORGE_HOOKS=off`.
+## It runs without you asking
 
-## Drafts
+In Claude Code:
 
-Claude writes each document as JSON; a script bundled with the skills (`scripts/agentforge.mjs`, Node 18+, no dependencies) checks that it has every part and turns it into Markdown with Mermaid diagrams. The script checks structure (ids, required fields, references between the feature map, specs and journeys). It also confirms that each test linked to a criterion exists. It does **not** check that each criterion's quote is really in the code, or run the tests, so specs are marked **Draft, not verified**. The skills tell Claude to re-read every citation, but read them as claims to confirm.
+- **Before every push or PR.** When Claude is about to run `git push` or `gh pr create`, the plugin runs the PR check first. If it finds something, Claude shows you the findings before anything leaves your machine. Say go ahead and it pushes; the same commit is never stopped twice.
+- **At the start of a session.** If the repository has no feature map, or specs are missing, Claude knows and offers to fix it.
+- **On GitHub.** `/agentforge:setup-github` adds a workflow: every pull request gets a comment with the checks and a QA run (free, no model), and after each merge Claude Code refreshes the docs on your own Claude subscription.
 
-The hosted AgentForge reads the same files from your repository and adds verification against the code, a live feature map, spec-drift and architecture checks on every pull request, and QA that runs the linked tests and records which criteria pass.
+Browser (Playwright) tests linked to criteria run only against localhost, so check-qa never signs in to your live site from CI. Point them at a local server with `{ "qa": { "browser": { "env": { "E2E_BASE_URL": "http://localhost:3000" } } } }` in `.agentforge/config.json` (use the variable your Playwright config reads), or opt in to a deployed site with `"allowRemote": true`. Without Playwright's own Chromium, check-qa uses the installed Google Chrome.
+
+To turn the local hooks off, add `.agentforge/config.json` with `{ "hooks": { "prePush": false, "sessionStart": false } }`, or set `AGENTFORGE_HOOKS=off`.
+
+## Code checks the work
+
+The model writes; a bundled script decides (`scripts/agentforge.mjs`, Node 18+ and git, no dependencies):
+
+- `check-specs` checks every acceptance criterion's quote against the file it cites, moves a citation to the line where its quote really is, and alone marks a spec complete.
+- `check-qa` runs the tests each acceptance criterion names and sets each feature's QA from the results: complete only when every criterion's tests pass. It records the commit and a fingerprint of the feature's code, so a later change reads as "needs re-verify".
+- `check-baseline` checks that every journey runs through real features and every PRD requirement cites the feature that builds it.
+- `check-architecture` checks the C4 map: every cited file exists, the component view zooms into the container where the agent runs, and each feature has exactly one component holding only its own code.
+- `check-workflows` checks every workflow step's code.
+- `pr-check` compares your branch with its base.
 
 ## Files it keeps in your repository
 
-- `.agentforge/feature-map.json`: the feature map and spec drafts. Commit it.
+- `.agentforge/feature-map.json`: the feature map, spec drafts and QA results. Commit it.
 - `.agentforge/product-baseline.json` and `docs/product/baseline.md`: the product baseline and its journeys.
 - `docs/specs/`: feature specs, each with its scenarios.
 - `.agentforge/architecture-map.json`, `.agentforge/workflows.json` and the pages they produce in `docs/architecture/`.
 - `docs/architecture/README.md`: the architecture overview.
 - `docs/adr/NNNN-*.md`: decision records, with `paths:` naming the code each one governs.
+
+## AgentForge hosted
+
+The hosted AgentForge reads the same files and keeps them true for a whole team: a live feature map and dashboard anyone can open, each feature's change log linked to the work that changed it, and Software Engineer and QA agents that build and verify on branches.
 
 ## Contributing
 

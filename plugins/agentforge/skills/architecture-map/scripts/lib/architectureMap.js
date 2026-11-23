@@ -1,6 +1,7 @@
-// Alex's architecture map (.agentforge/architecture-map.json): the C4 containers of the
-// repository and the components inside the one where the agent runs, drawn as Mermaid.
-// The model writes it; this module normalizes it and formats the pages.
+// Alex's architecture map: the components of the connected
+// repository and how they connect, drawn on his page. The model proposes it; code keeps
+// only what holds up — every path is checked against the repository tree, ids are made
+// unique, and connections must join two known components.
 
 export const LAYERS = ['client', 'server', 'data', 'external']
 export const COMPONENT_KINDS = ['feature', 'agent', 'tools', 'state', 'shell']
@@ -557,6 +558,49 @@ export function c4ComponentsMermaid(map) {
   if (others.length) lines.push(`  class ${others.map(alias).join(',')} container`)
   lines.push(`  class app,${COMPONENT_COLUMNS.flat().filter(kind => view.components.some(component => component.kind === kind)).map(kind => `k_${kind}`).join(',')}${others.length ? ',others' : ''} boundary`)
   return lines.join('\n')
+}
+
+// What a map breaks, as sentences to fix (the plugin's check-architecture):
+// - the component view zooms into a container that exists;
+// - every cited path exists;
+// - each feature component names one feature from the feature map, no feature has two
+//   components, and no component holds the code of two features (the code each feature
+//   owns is its anchors in the feature map).
+// features: [{ id, name, anchors: ['module:server/agent/tools/memory.js', ...] }]
+export function architectureProblems(map, { features = [] } = {}) {
+  const problems = []
+  const view = map?.componentView
+  for (const component of map?.components || []) if (component.unconfirmedPaths?.length) problems.push(`Container "${component.name}" cites files that aren’t in the repository: ${component.unconfirmedPaths.join(', ')}.`)
+  if (!view?.components?.length) return problems
+  if (!(map.components || []).some(component => component.id === view.container)) problems.push(`The component view zooms into "${view.container}", which isn’t one of the containers.`)
+  const byId = new Map(features.map(feature => [feature.id, feature]))
+  const anchorPaths = (feature) => (feature.anchors || []).map(anchor => String(typeof anchor === 'string' ? anchor : anchor?.path || '').replace(/^[a-z]+:/, '').replace(/\/$/, '')).filter(Boolean)
+  const owns = (path, anchor) => path === anchor || path.startsWith(`${anchor}/`) || anchor.startsWith(`${path}/`)
+  const claimed = new Map()
+  for (const component of view.components) {
+    if (!component.confirmed) problems.push(`Component "${component.name}" cites no file that exists${component.unconfirmedPaths?.length ? ` (${component.unconfirmedPaths.join(', ')})` : ''}.`)
+    else if (component.unconfirmedPaths?.length) problems.push(`Component "${component.name}" cites files that aren’t in the repository: ${component.unconfirmedPaths.join(', ')}.`)
+    if (component.kind !== 'feature') continue
+    if (!component.feature) { problems.push(`Feature component "${component.name}" doesn’t say which feature it belongs to: set "feature" to its id in the feature map.`); continue }
+    if (features.length && !byId.has(component.feature)) problems.push(`Feature component "${component.name}" names "${component.feature}", which isn’t in the feature map.`)
+    if (claimed.has(component.feature)) problems.push(`"${component.name}" and "${claimed.get(component.feature)}" are both the "${component.feature}" feature: one component per feature.`)
+    else claimed.set(component.feature, component.name)
+    // Each file belongs to the feature with the most specific anchor for it (a feature
+    // anchored on a whole folder doesn't own a file another feature names directly).
+    const ownerOf = (path) => {
+      let best = [], length = -1
+      for (const feature of features) for (const anchor of anchorPaths(feature)) {
+        if (!owns(path, anchor)) continue
+        const size = anchor.startsWith(`${path}/`) ? path.length : anchor.length
+        if (size > length) { best = [feature.id]; length = size } else if (size === length && !best.includes(feature.id)) best.push(feature.id)
+      }
+      return best
+    }
+    const mixed = component.paths.flatMap(ownerOf)
+    const others = [...new Set(mixed)].filter(id => id !== component.feature)
+    if (others.length) problems.push(`"${component.name}" holds code of ${others.map(id => `"${byId.get(id)?.name || id}"`).join(', ')} as well as "${byId.get(component.feature)?.name || component.feature}": split it, one component per feature.`)
+  }
+  return problems
 }
 
 export const componentsDocPath = (map) => {

@@ -1,22 +1,22 @@
 ---
 name: feature-spec
-description: Write feature specs from the code for features in the feature map, with acceptance criteria that cite the lines they rest on — as AgentForge's Product Manager (Maya). Use when the user asks to spec, document or finish specs for existing features.
+description: Write feature specs from the code for features in the feature map, with acceptance criteria that cite the lines they rest on, checked by code — as AgentForge's Product Manager (Maya). Use when the user asks to spec, document or finish specs for existing features.
 ---
 
 # Feature spec from the code (Maya, Product Manager)
 
-A spec here describes a feature **as built**: what it does today, in acceptance criteria a QA engineer can verify. You write it; a script checks that it has every part and writes the page. Pages are marked **Draft, not verified**: the script does not check citations against the code, so you must get them right yourself. You never set a spec's status.
+A spec here describes a feature **as built**: what it does today, in acceptance criteria a QA engineer can verify. You write it; a script checks it and decides whether it is complete. You never mark a spec complete yourself.
 
 ## Where the code is
 
 In Claude Code, use the current repository. In Claude chat there is no checkout: ask for the repository as a .zip (GitHub: **Code → Download ZIP**) or use a connected GitHub tool, unpack it into your working directory, pass that folder to the script with `--root <folder>`, and hand back the files you wrote as a .zip to commit. Skip steps that need git history if there is no `.git`.
 
-The script is bundled with this skill: `<skill folder>` below is the folder this SKILL.md is in.
+The script is bundled with this skill: `<skill folder>` below is the folder this SKILL.md is in (if it has no `scripts/` folder, use `${CLAUDE_PLUGIN_ROOT}` instead).
 
 ## Steps
 
-1. Read `.agentforge/feature-map.json`. If it is missing, run the `feature-map` skill first. Pick the features the user named, or every feature whose `spec.status` is not `draft`.
-2. If the feature's spec file already exists (`docs/specs/<feature>.md`, or `spec.existingDoc` in the map), read it first: keep what is right, re-cite each criterion against the code as it is now, and fill the gaps. The script rewrites the file, so carry over anything worth keeping.
+1. Read `.agentforge/feature-map.json`. If it is missing, run the `feature-map` skill first. Pick the features the user named, or every feature whose `spec.status` is not `complete`.
+2. If the feature's spec file already exists (`docs/specs/<feature>.md`, or `spec.existingDoc` in the map), read it first: keep what is right, re-cite each criterion against the code as it is now, and fill the gaps. The check rewrites the file, so carry over anything worth keeping.
 3. For each feature, read its anchors' code — open whole files, and follow imports into the code that implements the behavior.
 4. Write the spec into the feature's `spec.document` in the map, in this shape:
 
@@ -54,24 +54,23 @@ The script is bundled with this skill: `<skill folder>` below is the folder this
 }
 ```
 
-   - **Write the summary for a reader who never opens the code**: a PM, a designer, a new teammate. `objective` is under 40 words; `summary` is under 90 and says what the user can do, the rules that shape it (limits, approvals, when it runs), and what it doesn't do. No file names, function names, paths or endpoints. Those go in `howItWorks`, a short paragraph for engineers.
+   - **Write the summary for a reader who never opens the code**: a PM, a designer, a new teammate. `objective` is under 40 words; `summary` is under 90 and says what the user can do, the rules that shape it (limits, approvals, when it runs), and what it doesn't do. No file names, function names, paths or endpoints: the check rejects them. Those go in `howItWorks`, a short paragraph for engineers.
    - 3 to 15 acceptance criteria, each a full given / when / then. Write each part as a clause that continues the sentence ("the user presses Enter"), not a sentence of its own.
    - Every criterion cites at least one piece of evidence: the file, the line range you read it at, and a short **verbatim** quote from those lines (one line or a distinctive fragment). Never cite a line you did not read; never paraphrase a quote.
    - `surface` names where QA checks it (web, mobile, API, CLI) when the product has more than one.
    - Put anything you could not confirm in `limitations`, not in a criterion.
    - `scenarios`: one to four flows through the feature, step by step — the main flow first, then the alternatives and failures that matter. Each step names its actor (`user`, `agent` or `system`); set `approval: true` on an agent step that sends, submits, spends, deletes or contacts someone when the code waits for the user first. Only flows the code shows; leave it empty for a feature with no multi-step flow. A flow across several features is a journey in the product baseline (`product-baseline` skill), not a scenario.
-5. **Check your own citations.** For every criterion, open the cited file again and confirm the quote appears verbatim at the lines you gave. Fix the line numbers or the quote if not. Nothing else will catch a wrong citation.
-6. Write the pages:
+5. Run the check:
 
    ```bash
-   node "<skill folder>/scripts/agentforge.mjs" write-specs
+   node "<skill folder>/scripts/agentforge.mjs" check-specs
    ```
 
-   It checks each spec has an objective, at least 3 criteria, and a given / when / then with a cited file and quote on each; sets each spec's status to `draft` (all parts there) or `in_progress`; and writes `docs/specs/<feature>.md`.
-7. If it lists gaps, fix them and run it again. Stop after two rounds and report what is still open.
-8. Report each feature's result: draft, or in progress with its gaps.
+   It verifies every quote against the file, moves a citation to the line where its quote really is, sets each spec's status to `complete` or `in_progress`, and writes `docs/specs/<feature>.md`.
+6. If it lists problems, fix the criteria it names (re-read the lines, correct the quote or the line numbers, add criteria) and run it again. Stop after two fix rounds and report what is still open.
+7. Report each feature's result: complete, or in progress with its open problems.
 
 ## Rules
 
-- Describe behavior the code shows, not behavior you expect. A spec that looks finished but is wrong is worse than one in progress.
+- Describe behavior the code shows, not behavior you expect. A spec that is complete but wrong is worse than one in progress.
 - Keep each feature's `id`, `name` and anchors as they are; only the `spec` changes.

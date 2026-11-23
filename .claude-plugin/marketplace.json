@@ -1,12 +1,15 @@
 {
   "name": "agentforge",
-  "owner": { "name": "Ling", "url": "https://github.com/lngsa1234" },
-  "description": "AgentForge: an AI product manager and technical lead for your repository, on your own Claude Code subscription.",
+  "owner": {
+    "name": "Ling",
+    "url": "https://github.com/lngsa1234"
+  },
+  "description": "AgentForge: an AI product manager, technical lead and QA engineer for your repository, on your own Claude subscription.",
   "plugins": [
     {
       "name": "agentforge",
       "source": "./plugins/agentforge",
-      "description": "Feature map and draft specs from your code, product baseline and user journeys, architecture overview with C4 diagrams, workflows and decision records, requirements and impact-rated plans."
+      "description": "Feature map and specs from your code with every citation verified, acceptance criteria linked to tests that are run, architecture with C4 diagrams, workflows and decision records, and pre-PR checks."
     }
   ]
 }

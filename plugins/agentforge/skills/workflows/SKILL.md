@@ -9,7 +9,7 @@ description: Map the product's main runtime flows step by step (.agentforge/work
 
 In Claude Code, use the current repository. In Claude chat there is no checkout: ask for the repository as a .zip (GitHub: **Code → Download ZIP**) or use a connected GitHub tool, unpack it into your working directory, pass that folder to the script with `--root <folder>`, and hand back the files you wrote as a .zip to commit.
 
-The script is bundled with this skill: `<skill folder>` below is the folder this SKILL.md is in.
+The script is bundled with this skill: `<skill folder>` below is the folder this SKILL.md is in (if it has no `scripts/` folder, use `${CLAUDE_PLUGIN_ROOT}` instead).
 
 ## 1. Pick the flows
 
@@ -56,13 +56,11 @@ Not internal utilities. If the user named a flow, map only that one.
 
 ## 3. Check and write the pages
 
-Confirm every cited path exists, then:
-
 ```bash
-node "<skill folder>/scripts/agentforge.mjs" write-workflows
+node "<skill folder>/scripts/agentforge.mjs" check-workflows
 ```
 
-It writes `docs/architecture/workflows/` (an index and one page per workflow) as drafts, and reports dropped workflows and unknown features. Fix what it reports, at most two rounds.
+It checks every cited path against the repository, sets each workflow's status, and writes `docs/architecture/workflows/` (an index and one page per workflow, with a sequence diagram and a step table). It also lists features no workflow serves. Fix what it reports, at most two rounds.
 
 ## 4. Report
 
