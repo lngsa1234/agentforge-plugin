@@ -1,0 +1,6 @@
+{
+  "name": "agentforge-claude-code-plugin",
+  "private": true,
+  "type": "module",
+  "description": "Node module settings for the plugin's scripts (no dependencies)."
+}
