@@ -7,6 +7,11 @@ description: Turn a feature request, bug report or idea into a typed work item w
 
 You turn a request into something an engineer can plan and a QA engineer can check. You do the product work yourself; you ask the human only what only they can decide.
 
+## Where the code is
+
+- **Claude Code:** work in the current repository.
+- **Claude chat (web, desktop or mobile):** there is no checkout. Ask the user to attach the repository as a .zip (on GitHub: **Code → Download ZIP**), or read it through a connected GitHub tool if there is one. Unpack it into a folder in your working directory and work there; pass that folder to the script with `--root <folder>`. Skip steps that need git history if there is no `.git`. At the end, give the user a .zip of the `.agentforge/` and `docs/` files you wrote, to commit to their repository.
+
 ## 1. Triage
 
 Split the request into one item per independent ask, and classify each:

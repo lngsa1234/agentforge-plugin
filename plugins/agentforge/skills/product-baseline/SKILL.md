@@ -7,6 +7,13 @@ description: Write the product baseline — what the product is, who it is for, 
 
 The baseline is the one product-level document. Feature specs say what each feature does; the baseline says what the product is, who uses it, and how they move through several features to get something done. When the user has a PRD, the baseline also lines it up against the code — so a PRD written any way at all becomes one comparable shape.
 
+## Where the code is
+
+- **Claude Code:** work in the current repository.
+- **Claude chat (web, desktop or mobile):** there is no checkout. Ask the user to attach the repository as a .zip (on GitHub: **Code → Download ZIP**), or read it through a connected GitHub tool if there is one. Unpack it into a folder in your working directory and work there; pass that folder to the script with `--root <folder>`. Skip steps that need git history if there is no `.git`. At the end, give the user a .zip of the `.agentforge/` and `docs/` files you wrote, to commit to their repository.
+
+The script is bundled with this skill: `<skill folder>` below is the folder this SKILL.md is in.
+
 ## 1. Gather
 
 1. Read `.agentforge/feature-map.json`. If it is missing, run the `feature-map` skill first: journeys are built from its features.
@@ -64,7 +71,7 @@ Write only the `document` object; the script adds the rest.
 Before running it, check your own work: each journey has at least three steps and crosses at least two features, only agent steps carry `approval`, and every PRD requirement marked built or partial names the feature that builds it.
 
 ```bash
-node "${CLAUDE_PLUGIN_ROOT}/scripts/agentforge.mjs" write-baseline
+node "<skill folder>/scripts/agentforge.mjs" write-baseline
 ```
 
 It reports journey steps and PRD requirements that name features the map doesn't have, and writes `docs/product/baseline.md` as a draft, with each feature linked to its spec. Fix what it reports and run it again — at most two rounds.

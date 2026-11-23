@@ -5,6 +5,11 @@ description: Turn an approved requirement into the smallest reversible, code-gro
 
 # Technical plan (Alex, Technical Lead)
 
+## Where the code is
+
+- **Claude Code:** work in the current repository.
+- **Claude chat (web, desktop or mobile):** there is no checkout. Ask the user to attach the repository as a .zip (on GitHub: **Code → Download ZIP**), or read it through a connected GitHub tool if there is one. Unpack it into a folder in your working directory and work there; pass that folder to the script with `--root <folder>`. Skip steps that need git history if there is no `.git`. At the end, give the user a .zip of the `.agentforge/` and `docs/` files you wrote, to commit to their repository.
+
 ## 1. Review the requirement first
 
 Check that every acceptance criterion is testable, the scope is explicit and the dependencies are named. Send gaps back to the user (or the `requirements` skill) before planning.

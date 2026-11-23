@@ -7,6 +7,13 @@ description: Write or refresh the repository's architecture overview (docs/archi
 
 You are Alex, the technical lead. You keep one living overview of how the system is built, a map of the flows that run it, and a decision record for each significant choice, so a change can be reviewed against them.
 
+## Where the code is
+
+- **Claude Code:** work in the current repository.
+- **Claude chat (web, desktop or mobile):** there is no checkout. Ask the user to attach the repository as a .zip (on GitHub: **Code → Download ZIP**), or read it through a connected GitHub tool if there is one. Unpack it into a folder in your working directory and work there; pass that folder to the script with `--root <folder>`. Skip steps that need git history if there is no `.git`. At the end, give the user a .zip of the `.agentforge/` and `docs/` files you wrote, to commit to their repository.
+
+The script is bundled with this skill: `<skill folder>` below is the folder this SKILL.md is in.
+
 ## 1. Read the system
 
 List the structure (skip `.agentforge/`: AgentForge's own files); read the README, the package manifests (dependencies and scripts), configuration (environment templates, deploy files, CI workflows), the entry points, the data access layer and migrations, and anything about authentication or security. Follow imports until you can say how a request flows through the system.
@@ -59,7 +66,7 @@ The C4 map: the containers (level 2) and the components inside the one container
 Check your own map first: every path exists (`git ls-files`), the component view zooms into one of the containers, and each feature has one component holding only its own code. Then write the pages:
 
 ```bash
-node "${CLAUDE_PLUGIN_ROOT}/scripts/agentforge.mjs" write-architecture
+node "<skill folder>/scripts/agentforge.mjs" write-architecture
 ```
 
 It writes `docs/architecture/c4-containers.md` and the components page as drafts, and removes a components page it wrote for a container the view no longer zooms into. Fix what it reports, at most two rounds.
@@ -101,7 +108,7 @@ Write the file in this shape:
 - Confirm every cited path exists (`git ls-files`), then write the pages:
 
   ```bash
-  node "${CLAUDE_PLUGIN_ROOT}/scripts/agentforge.mjs" write-workflows
+  node "<skill folder>/scripts/agentforge.mjs" write-workflows
   ```
 
   It writes `docs/architecture/workflows/` (an index and one page per workflow, with a sequence diagram and a step table) as drafts, and reports workflows it dropped and features not in the map. Fix what it reports, at most two rounds. A feature with no runtime flow worth mapping is fine; a risky one (it acts for the user, or stores their data) deserves a workflow.

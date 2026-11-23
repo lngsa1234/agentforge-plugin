@@ -6,7 +6,7 @@ It runs on your own Claude Code subscription. No server, no API key, no account.
 
 ## Install
 
-In Claude Code:
+**Claude Code** (terminal, desktop app or IDE):
 
 ```text
 /plugin marketplace add lngsa1234/agentforge-plugin
@@ -14,6 +14,10 @@ In Claude Code:
 ```
 
 Then restart Claude Code, or run `/reload-plugins`.
+
+**Claude on the web, desktop or mobile:** on claude.ai or in the desktop app, open **Customize → Plugins**, select **Add marketplace**, enter `lngsa1234/agentforge-plugin`, and install **AgentForge**. The plugin is saved to your account, so its skills are also available in chat on your phone and in Claude Code when you sign in with the same account. Code execution must be on.
+
+In chat there is no checkout of your repository: attach it as a .zip (on GitHub, **Code → Download ZIP**) or connect GitHub. Claude writes the docs and gives them back as a .zip for you to commit. The session-start reminder below only runs in Claude Code.
 
 ## What it does
 
@@ -28,11 +32,11 @@ Then restart Claude Code, or run `/reload-plugins`.
 
 You don't have to name the skills. Claude picks them up when you ask for what they do: "what features does this app have?", "spec the checkout feature", "how is this system built?", "plan this change".
 
-When a session starts in a repository with no feature map, missing specs or no architecture overview, Claude knows and mentions it once. To turn that off, add `.agentforge/config.json` with `{ "hooks": { "sessionStart": false } }`, or set `AGENTFORGE_HOOKS=off`.
+In Claude Code, when a session starts in a repository with no feature map, missing specs or no architecture overview, Claude knows and mentions it once. To turn that off, add `.agentforge/config.json` with `{ "hooks": { "sessionStart": false } }`, or set `AGENTFORGE_HOOKS=off`.
 
 ## Drafts
 
-Claude writes each document as JSON; a bundled script (`scripts/agentforge.mjs`, Node 18+, no dependencies) checks that it has every part and turns it into Markdown with Mermaid diagrams. The script checks structure (ids, required fields, references between the feature map, specs and journeys). It does **not** check that each criterion's quote is really in the code, so specs are marked **Draft, not verified**. The skills tell Claude to re-read every citation, but read them as claims to confirm.
+Claude writes each document as JSON; a script bundled with the skills (`scripts/agentforge.mjs`, Node 18+, no dependencies) checks that it has every part and turns it into Markdown with Mermaid diagrams. The script checks structure (ids, required fields, references between the feature map, specs and journeys). It does **not** check that each criterion's quote is really in the code, so specs are marked **Draft, not verified**. The skills tell Claude to re-read every citation, but read them as claims to confirm.
 
 The hosted AgentForge reads the same files from your repository and adds verification against the code, a live feature map, spec-drift and architecture checks on every pull request, and QA linking each criterion to the tests that prove it.
 
@@ -44,6 +48,10 @@ The hosted AgentForge reads the same files from your repository and adds verific
 - `.agentforge/architecture-map.json`, `.agentforge/workflows.json` and the pages they produce in `docs/architecture/`.
 - `docs/architecture/README.md`: the architecture overview.
 - `docs/adr/NNNN-*.md`: decision records, with `paths:` naming the code each one governs.
+
+## Contributing
+
+This repository is published automatically from AgentForge's main repository, so changes made here directly are overwritten. Issues and pull requests are welcome: accepted changes are applied upstream and published from there.
 
 ## License
 

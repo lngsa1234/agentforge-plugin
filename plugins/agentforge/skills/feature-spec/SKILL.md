@@ -7,6 +7,13 @@ description: Write feature specs from the code for features in the feature map, 
 
 A spec here describes a feature **as built**: what it does today, in acceptance criteria a QA engineer can verify. You write it; a script checks that it has every part and writes the page. Pages are marked **Draft, not verified**: the script does not check citations against the code, so you must get them right yourself. You never set a spec's status.
 
+## Where the code is
+
+- **Claude Code:** work in the current repository.
+- **Claude chat (web, desktop or mobile):** there is no checkout. Ask the user to attach the repository as a .zip (on GitHub: **Code → Download ZIP**), or read it through a connected GitHub tool if there is one. Unpack it into a folder in your working directory and work there; pass that folder to the script with `--root <folder>`. Skip steps that need git history if there is no `.git`. At the end, give the user a .zip of the `.agentforge/` and `docs/` files you wrote, to commit to their repository.
+
+The script is bundled with this skill: `<skill folder>` below is the folder this SKILL.md is in.
+
 ## Steps
 
 1. Read `.agentforge/feature-map.json`. If it is missing, run the `feature-map` skill first. Pick the features the user named, or every feature whose `spec.status` is not `draft`.
@@ -58,7 +65,7 @@ A spec here describes a feature **as built**: what it does today, in acceptance 
 6. Write the pages:
 
    ```bash
-   node "${CLAUDE_PLUGIN_ROOT}/scripts/agentforge.mjs" write-specs
+   node "<skill folder>/scripts/agentforge.mjs" write-specs
    ```
 
    It checks each spec has an objective, at least 3 criteria, and a given / when / then with a cited file and quote on each; sets each spec's status to `draft` (all parts there) or `in_progress`; and writes `docs/specs/<feature>.md`.

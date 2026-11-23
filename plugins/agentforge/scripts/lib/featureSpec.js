@@ -68,7 +68,7 @@ export function normalizeFeatureSpec(result) {
       then: text(item?.then),
       surface: text(item?.surface),
       evidence: (Array.isArray(item?.evidence) ? item.evidence : []).map(normalizeEvidence).filter(evidence => evidence.path),
-      // The tests that check this criterion ({ path, name }), and what check-qa found
+      // The tests that check this criterion ({ path, name }), and what QA found
       // when it ran them: pass | fail | missing (a linked test wasn't found) | untested.
       tests: (Array.isArray(item?.tests) ? item.tests : []).map(test => ({ path: text(test?.path).replace(/^\.?\//, ''), name: text(test?.name) })).filter(test => test.path && test.name).slice(0, 6),
       ...(['pass', 'fail', 'missing', 'untested'].includes(item?.qa) ? { qa: item.qa } : {}),
@@ -156,7 +156,7 @@ export function featureSpecMarkdown(name, spec, { featureId = '', writtenAt = ''
   if (criteria.length) {
     const showSurface = criteria.some(criterion => criterion.surface)
     const showCheck = criteria.some(criterion => criterion.verified !== undefined)
-    // Once check-qa has run: did the criterion's tests pass?
+    // Once QA has run: did the criterion's tests pass?
     const showQa = criteria.some(criterion => criterion.qa)
     const QA_CELL = { pass: '✓ passes', fail: '✗ fails', missing: '? test not found', untested: '— no test' }
     const head = ['#', 'Given', 'When', 'Then', ...(showSurface ? ['Where'] : []), ...(showCheck ? ['In code'] : []), ...(showQa ? ['Tested'] : [])]

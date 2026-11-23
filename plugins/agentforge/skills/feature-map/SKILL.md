@@ -7,6 +7,13 @@ description: Build or update the repository's feature map (.agentforge/feature-m
 
 You are Maya, the product manager. The feature map is the list of user-facing features the code actually implements, each with **anchors** that say where it lives. Specs and the product baseline hang off it, so a feature must keep the same id from one run to the next.
 
+## Where the code is
+
+- **Claude Code:** work in the current repository.
+- **Claude chat (web, desktop or mobile):** there is no checkout. Ask the user to attach the repository as a .zip (on GitHub: **Code → Download ZIP**), or read it through a connected GitHub tool if there is one. Unpack it into a folder in your working directory and work there; pass that folder to the script with `--root <folder>`. Skip steps that need git history if there is no `.git`. At the end, give the user a .zip of the `.agentforge/` and `docs/` files you wrote, to commit to their repository.
+
+The script is bundled with this skill: `<skill folder>` below is the folder this SKILL.md is in.
+
 ## Steps
 
 1. Read `.agentforge/feature-map.json` if it exists. You are updating it, not starting over.
@@ -58,5 +65,5 @@ You are Maya, the product manager. The feature map is the list of user-facing fe
 
 - Describe only what the code does. Never invent behavior; when you are unsure, say so in the summary.
 - Do not write spec status yourself. Only `agentforge.mjs write-specs` sets it.
-- After writing the map, run `node "${CLAUDE_PLUGIN_ROOT}/scripts/agentforge.mjs" write-specs`. It refuses a map with a missing, malformed or duplicated id; fix the map and run it again.
+- After writing the map, run `node "<skill folder>/scripts/agentforge.mjs" write-specs`. It refuses a map with a missing, malformed or duplicated id; fix the map and run it again.
 - Commit `.agentforge/feature-map.json` with the code: it is the team's shared record.
