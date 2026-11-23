@@ -7,7 +7,9 @@
 //     Checks the feature map's ids (present, kebab-case, used once), then writes
 //     docs/specs/<id>.md for every feature with a spec, marked "Draft, not verified".
 //     Reports specs that are missing parts: an objective, at least 3 criteria, a
-//     given/when/then and a cited file and quote on each criterion.
+//     given/when/then and a cited file and quote on each criterion. Also reports which
+//     criteria are linked to a test (criterion.tests: [{ path, name }]) and whether each
+//     linked test exists: its file is there and its name appears in it. Tests are not run.
 //
 //   node agentforge.mjs write-baseline [--root DIR]
 //     Writes docs/product/baseline.md from .agentforge/product-baseline.json, and reports
@@ -114,6 +116,21 @@ export function checkFeatureMap(features, { root = '' } = {}) {
 
 const mapErrorMessage = (errors) => `The feature map needs fixing first:\n${errors.map(item => `- ${item}`).join('\n')}`
 
+// ---- tests ------------------------------------------------------------------------
+
+// A linked test exists when its file is in the repository and the test's own name (the
+// last part of "describe > test") appears in it as a string. Nothing is run.
+export function testLinkStatus(root, tests) {
+  if (!tests.length) return 'untested'
+  const found = tests.every(test => {
+    const text = readText(root, test.path)
+    if (text === null) return false
+    const name = test.name.split(' > ').pop().trim()
+    return [`'${name}'`, `"${name}"`, `\`${name}\``].some(quoted => text.includes(quoted))
+  })
+  return found ? 'linked' : 'missing'
+}
+
 // ---- specs ------------------------------------------------------------------------
 
 // What a spec is missing, by shape only. Citations are not checked against the code.
@@ -151,9 +168,19 @@ export function writeSpecs(root, { now = new Date().toISOString() } = {}) {
     }
     const spec = normalizeFeatureSpec(draft)
     const gaps = isRetired(feature) ? [] : specGaps(spec)
-    feature.spec = { status: gaps.length ? 'in_progress' : 'draft', document: draft, gaps, writtenAt: now }
-    writeFile(root, path, featureSpecMarkdown(feature.name, spec, { featureId: feature.id, writtenAt: now, featureStatus: feature.status || 'built', specStatus: feature.spec.status }))
-    if (!isRetired(feature)) results.push({ name: feature.name, status: feature.spec.status, gaps, path })
+    // Which criteria have a test, for the page and the report; not stored as a QA result.
+    const anyTests = spec.acceptanceCriteria.some(criterion => criterion.tests.length)
+    const tests = { criteria: spec.acceptanceCriteria.length, linked: 0, untested: [], missing: [] }
+    for (const criterion of spec.acceptanceCriteria) {
+      const status = testLinkStatus(root, criterion.tests)
+      if (anyTests) criterion.qa = status
+      else delete criterion.qa
+      if (status === 'linked') tests.linked += 1
+      else tests[status].push(criterion.id)
+    }
+    feature.spec = { status: gaps.length ? 'in_progress' : 'draft', document: draft, gaps, tests, writtenAt: now }
+    writeFile(root, path, featureSpecMarkdown(feature.name, spec, { featureId: feature.id, writtenAt: now, featureStatus: feature.status || 'built', specStatus: feature.spec.status, qa: { counts: tests } }))
+    if (!isRetired(feature)) results.push({ name: feature.name, status: feature.spec.status, gaps, path, tests })
   }
   writeFile(root, MAP_PATH, `${JSON.stringify(map, null, 2)}\n`)
   return { results, notes: mapCheck.notes }
@@ -164,9 +191,14 @@ function printSpecs({ error, results, notes = [] }) {
   const drafts = results.filter(item => item.status === 'draft').length
   console.log(`# Feature specs: ${drafts} of ${results.length} written as drafts\n`)
   for (const item of results) {
-    console.log(`- **${item.name}**: ${item.status.replace(/_/g, ' ')}${item.path ? ` (${item.path})` : ''}`)
+    const tests = item.tests?.criteria ? ` — ${item.tests.linked} of ${item.tests.criteria} criteria linked to a test` : ''
+    console.log(`- **${item.name}**: ${item.status.replace(/_/g, ' ')}${tests}${item.path ? ` (${item.path})` : ''}`)
     for (const gap of item.gaps) console.log(`  - ${gap}`)
+    if (item.tests?.missing.length) console.log(`  - Linked test not found for ${item.tests.missing.join(', ')}: check the file path and copy the test's name exactly.`)
+    if (item.tests?.untested.length && item.tests.linked + item.tests.missing.length) console.log(`  - No test yet: ${item.tests.untested.join(', ')}.`)
   }
+  const totals = results.filter(item => item.tests).reduce((sum, item) => ({ criteria: sum.criteria + item.tests.criteria, linked: sum.linked + item.tests.linked }), { criteria: 0, linked: 0 })
+  if (totals.criteria) console.log(`\nTests: ${totals.linked} of ${totals.criteria} acceptance criteria are linked to a test. Links are checked to exist; the tests are not run.`)
   if (notes.length) console.log(`\n${notes.map(item => `Note: ${item}`).join('\n')}`)
   console.log('\nDrafts are not checked against the code: each criterion\'s quote is a claim to confirm. The hosted AgentForge verifies them.')
   return 0

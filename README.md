@@ -1,6 +1,6 @@
 # AgentForge for Claude Code
 
-An AI product manager (Maya) and technical lead (Alex) for your repository. They read your code and write the product and architecture docs your team keeps meaning to write: a feature map, feature specs, user journeys, C4 diagrams, workflows and decision records.
+An AI product manager (Maya), technical lead (Alex) and QA engineer (Priya) for your repository. They read your code and write the product and architecture docs your team keeps meaning to write: a feature map, feature specs, user journeys, C4 diagrams, workflows and decision records.
 
 It runs on your own Claude Code subscription. No server, no API key, no account.
 
@@ -28,6 +28,7 @@ In chat there is no checkout of your repository: attach it as a .zip (on GitHub,
 | `/agentforge:product-baseline` | Maya | `docs/product/baseline.md`: who the product is for, the journeys across features as swimlane diagrams, and, if you have a PRD in any format, what it asks for against what's built |
 | `/agentforge:requirements` | Maya | A request turned into a typed work item with testable acceptance criteria; questions only when it's unclear |
 | `/agentforge:architecture` | Alex | `docs/architecture/README.md`, the C4 container and component diagrams, runtime workflows as sequence diagrams, and decision records in `docs/adr/` |
+| `/agentforge:qa` | Priya | Each acceptance criterion linked to the tests that check it: every spec page shows which criteria have a test and which don't |
 | `/agentforge:tech-plan` | Alex | The smallest reversible plan for a change, impact rated none / minor / major, with a decision record when it's major |
 
 You don't have to name the skills. Claude picks them up when you ask for what they do: "what features does this app have?", "spec the checkout feature", "how is this system built?", "plan this change".
@@ -36,9 +37,9 @@ In Claude Code, when a session starts in a repository with no feature map, missi
 
 ## Drafts
 
-Claude writes each document as JSON; a script bundled with the skills (`scripts/agentforge.mjs`, Node 18+, no dependencies) checks that it has every part and turns it into Markdown with Mermaid diagrams. The script checks structure (ids, required fields, references between the feature map, specs and journeys). It does **not** check that each criterion's quote is really in the code, so specs are marked **Draft, not verified**. The skills tell Claude to re-read every citation, but read them as claims to confirm.
+Claude writes each document as JSON; a script bundled with the skills (`scripts/agentforge.mjs`, Node 18+, no dependencies) checks that it has every part and turns it into Markdown with Mermaid diagrams. The script checks structure (ids, required fields, references between the feature map, specs and journeys). It also confirms that each test linked to a criterion exists. It does **not** check that each criterion's quote is really in the code, or run the tests, so specs are marked **Draft, not verified**. The skills tell Claude to re-read every citation, but read them as claims to confirm.
 
-The hosted AgentForge reads the same files from your repository and adds verification against the code, a live feature map, spec-drift and architecture checks on every pull request, and QA linking each criterion to the tests that prove it.
+The hosted AgentForge reads the same files from your repository and adds verification against the code, a live feature map, spec-drift and architecture checks on every pull request, and QA that runs the linked tests and records which criteria pass.
 
 ## Files it keeps in your repository
 

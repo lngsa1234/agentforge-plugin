@@ -68,10 +68,11 @@ export function normalizeFeatureSpec(result) {
       then: text(item?.then),
       surface: text(item?.surface),
       evidence: (Array.isArray(item?.evidence) ? item.evidence : []).map(normalizeEvidence).filter(evidence => evidence.path),
-      // The tests that check this criterion ({ path, name }), and what QA found
-      // when it ran them: pass | fail | missing (a linked test wasn't found) | untested.
+      // The tests that check this criterion ({ path, name }), and what QA found:
+      // pass | fail (tests ran) | linked (a linked test exists, not run) | missing (a
+      // linked test wasn't found) | untested.
       tests: (Array.isArray(item?.tests) ? item.tests : []).map(test => ({ path: text(test?.path).replace(/^\.?\//, ''), name: text(test?.name) })).filter(test => test.path && test.name).slice(0, 6),
-      ...(['pass', 'fail', 'missing', 'untested'].includes(item?.qa) ? { qa: item.qa } : {}),
+      ...(['pass', 'fail', 'linked', 'missing', 'untested'].includes(item?.qa) ? { qa: item.qa } : {}),
     }))
     .filter(item => item.given || item.when || item.then)
     .slice(0, MAX_CRITERIA)
@@ -109,7 +110,8 @@ export function featureStatusLine({ featureStatus = '', specStatus = '', qa = nu
   if (featureStatus) parts.push(`**Feature:** ${FEATURE_STATUS_LABEL[featureStatus] || featureStatus}`)
   if (specStatus) parts.push(`**Spec:** ${SPEC_STATUS_LABEL[specStatus] || specStatus.replace(/_/g, ' ')}`)
   const counts = qa?.counts
-  if (counts?.criteria) {
+  if (counts?.criteria && counts.linked !== undefined) parts.push(`**Tests:** ${counts.linked} of ${counts.criteria} criteria linked to a test`)
+  else if (counts?.criteria) {
     const failing = counts.failing ? `, ${counts.failing} failing` : ''
     parts.push(`**QA:** ${counts.passing} of ${counts.criteria} criteria pass${failing}`)
   }
@@ -158,7 +160,7 @@ export function featureSpecMarkdown(name, spec, { featureId = '', writtenAt = ''
     const showCheck = criteria.some(criterion => criterion.verified !== undefined)
     // Once QA has run: did the criterion's tests pass?
     const showQa = criteria.some(criterion => criterion.qa)
-    const QA_CELL = { pass: '✓ passes', fail: '✗ fails', missing: '? test not found', untested: '— no test' }
+    const QA_CELL = { pass: '✓ passes', fail: '✗ fails', linked: '✓ test linked', missing: '? test not found', untested: '— no test' }
     const head = ['#', 'Given', 'When', 'Then', ...(showSurface ? ['Where'] : []), ...(showCheck ? ['In code'] : []), ...(showQa ? ['Tested'] : [])]
     out.push('## Acceptance criteria', '', `| ${head.join(' | ')} |`, `|${head.map(() => '---').join('|')}|`)
     for (const criterion of criteria) {
