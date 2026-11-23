@@ -7,12 +7,11 @@ description: Turn an approved requirement into the smallest reversible, code-gro
 
 ## Where the code is
 
-- **Claude Code:** work in the current repository.
-- **Claude chat (web, desktop or mobile):** there is no checkout. Ask the user to attach the repository as a .zip (on GitHub: **Code → Download ZIP**), or read it through a connected GitHub tool if there is one. Unpack it into a folder in your working directory and work there; pass that folder to the script with `--root <folder>`. Skip steps that need git history if there is no `.git`. At the end, give the user a .zip of the `.agentforge/` and `docs/` files you wrote, to commit to their repository.
+In Claude Code, use the current repository. In Claude chat there is no checkout: ask for the repository as a .zip (GitHub: **Code → Download ZIP**) or use a connected GitHub tool, unpack it into your working directory, and hand back the files you wrote as a .zip to commit.
 
 ## 1. Review the requirement first
 
-Check that every acceptance criterion is testable, the scope is explicit and the dependencies are named. Send gaps back to the user (or the `requirements` skill) before planning.
+Check that every acceptance criterion is testable, the scope is explicit and the dependencies are named. Send gaps back to the user (or the `work-item` skill) before planning.
 
 ## 2. Read the code
 
@@ -26,7 +25,7 @@ Pick one level and write it in the plan:
 - **minor** — an interface or data shape changes inside an existing part: an API route's contract, an exported signature, an additive column. Name the interface or shape.
 - **major** — the plan adds or removes a container, data store, outside system or a connection between them, or changes authentication, security or a technology choice.
 
-A **major** impact gets a decision record: write `docs/adr/NNNN-<slug>.md` in the `architecture` skill's format with `status: proposed` and the `paths` the change will touch. It becomes `accepted` when the user approves the plan. A change that breaks an accepted record must say so and propose superseding it.
+A **major** impact gets a decision record: write `docs/adr/NNNN-<slug>.md` in the `decision-records` skill's format with `status: proposed` and the `paths` the change will touch. It becomes `accepted` when the user approves the plan. A change that breaks an accepted record must say so and propose superseding it.
 
 ## 4. Write the plan
 

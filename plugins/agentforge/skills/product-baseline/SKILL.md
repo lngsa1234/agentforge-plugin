@@ -9,8 +9,7 @@ The baseline is the one product-level document. Feature specs say what each feat
 
 ## Where the code is
 
-- **Claude Code:** work in the current repository.
-- **Claude chat (web, desktop or mobile):** there is no checkout. Ask the user to attach the repository as a .zip (on GitHub: **Code → Download ZIP**), or read it through a connected GitHub tool if there is one. Unpack it into a folder in your working directory and work there; pass that folder to the script with `--root <folder>`. Skip steps that need git history if there is no `.git`. At the end, give the user a .zip of the `.agentforge/` and `docs/` files you wrote, to commit to their repository.
+In Claude Code, use the current repository. In Claude chat there is no checkout: ask for the repository as a .zip (GitHub: **Code → Download ZIP**) or use a connected GitHub tool, unpack it into your working directory, pass that folder to the script with `--root <folder>`, and hand back the files you wrote as a .zip to commit. Skip steps that need git history if there is no `.git`.
 
 The script is bundled with this skill: `<skill folder>` below is the folder this SKILL.md is in.
 

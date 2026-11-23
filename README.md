@@ -26,10 +26,13 @@ In chat there is no checkout of your repository: attach it as a .zip (on GitHub,
 | `/agentforge:feature-map` | Maya | `.agentforge/feature-map.json`: every user-facing feature the code implements, with anchors saying where it lives |
 | `/agentforge:feature-spec` | Maya | `docs/specs/<feature>.md` written from the code, each acceptance criterion citing the lines it rests on, with step-by-step scenarios |
 | `/agentforge:product-baseline` | Maya | `docs/product/baseline.md`: who the product is for, the journeys across features as swimlane diagrams, and, if you have a PRD in any format, what it asks for against what's built |
-| `/agentforge:requirements` | Maya | A request turned into a typed work item with testable acceptance criteria; questions only when it's unclear |
-| `/agentforge:architecture` | Alex | `docs/architecture/README.md`, the C4 container and component diagrams, runtime workflows as sequence diagrams, and decision records in `docs/adr/` |
+| `/agentforge:work-item` | Maya | A request turned into a typed work item (feature, bug, chore or question) with testable acceptance criteria; questions only when it's unclear |
+| `/agentforge:architecture` | Alex | `docs/architecture/README.md`: how the system is built, the rules the code must keep, and links to the pages below. Ask for "the architecture" and it runs the three below first |
+| `/agentforge:architecture-map` | Alex | The C4 container and component diagrams in `docs/architecture/` |
+| `/agentforge:workflows` | Alex | The main runtime flows as sequence diagrams in `docs/architecture/workflows/` |
+| `/agentforge:decision-records` | Alex | The decisions already in effect in `docs/adr/`, each naming the code it governs |
 | `/agentforge:qa` | Priya | Each acceptance criterion linked to the tests that check it: every spec page shows which criteria have a test and which don't |
-| `/agentforge:tech-plan` | Alex | The smallest reversible plan for a change, impact rated none / minor / major, with a decision record when it's major |
+| `/agentforge:tech-plan` | Alex | The smallest reversible plan, impact rated none / minor / major, a decision record when major |
 
 You don't have to name the skills. Claude picks them up when you ask for what they do: "what features does this app have?", "spec the checkout feature", "how is this system built?", "plan this change".
 

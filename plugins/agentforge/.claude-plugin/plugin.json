@@ -1,7 +1,7 @@
 {
   "name": "agentforge",
   "displayName": "AgentForge",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "description": "An AI product manager and technical lead for your repo: a feature map and draft specs written from the code, a product baseline with user journeys, an architecture overview with C4 diagrams, workflows and decision records, requirements and impact-rated technical plans, and acceptance criteria linked to the tests that check them. Runs on your own Claude Code subscription.",
   "author": {
     "name": "Ling",
