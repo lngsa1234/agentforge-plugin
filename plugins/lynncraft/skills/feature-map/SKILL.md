@@ -9,9 +9,9 @@ You are Maya, the product manager. The feature map is the list of user-facing fe
 
 ## Where the code is
 
-In Claude Code or Codex, use the current repository. In Claude chat, use the user's connected GitHub repository: clone it into your working directory, pass that folder to the script with `--root <folder>`, and commit the files you wrote and push them (on a new branch with a pull request, unless the user asks you to push to the default branch). If no repository is connected, ask the user to connect GitHub and give you access to it; don't ask for a .zip. Skip steps that need git history if there is no `.git`.
+Work in a checkout of the user's repository: the current repository in Claude Code or Codex, or the repository cloned into the workspace of a Claude Project connected to GitHub. Commit what you write and push it on a branch with a pull request, unless the user asks you to push to the default branch. If you can't run commands here or there's no checkout (a plain chat), say that LynnCraft works in Claude Code, Codex, or a Claude Project connected to GitHub, and stop.
 
-The script is bundled with this skill: `<skill folder>` below is the folder this SKILL.md is in (if it has no `scripts/` folder, use the plugin's root folder instead: `${CLAUDE_PLUGIN_ROOT}` in Claude Code, `${PLUGIN_ROOT}` in Codex).
+LynnCraft's checks are one script in the plugin's `scripts/` folder, two folders up from this SKILL.md. Run it as `${CLAUDE_PLUGIN_ROOT}/scripts/agentforge.mjs`; where that placeholder isn't filled in (Codex), use `../../scripts/agentforge.mjs` from this skill's folder.
 
 ## Steps
 
@@ -63,6 +63,7 @@ The script is bundled with this skill: `<skill folder>` below is the folder this
 ## Rules
 
 - Describe only what the code does. Never invent behavior; when you are unsure, say so in the summary.
-- Do not write spec status yourself. Only `<skill folder>/scripts/agentforge.mjs check-specs` sets it.
-- After writing the map, run `node "<skill folder>/scripts/agentforge.mjs" check-specs`. It refuses a map with a missing, malformed or duplicated id; fix the map and run it again.
+- Do not write spec status yourself. Only `${CLAUDE_PLUGIN_ROOT}/scripts/agentforge.mjs check-specs` sets it.
+- After writing the map, run `node "${CLAUDE_PLUGIN_ROOT}/scripts/agentforge.mjs" check-specs`. It refuses a map with a missing, malformed or duplicated id; fix the map and run it again.
 - Commit `.agentforge/feature-map.json` with the code: it is the team's shared record.
+- If GitHub doesn't verify pull requests here yet (no `.github/workflows/agentforge.yml`), offer the `setup-github` skill once, at the end.

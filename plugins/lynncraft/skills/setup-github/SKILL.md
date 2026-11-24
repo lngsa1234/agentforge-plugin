@@ -1,48 +1,43 @@
 ---
 name: setup-github
-description: Set up LynnCraft on GitHub for this repository — a workflow that posts the Spec drift and Architecture checks and runs QA (each acceptance criterion's tests) on every pull request, re-records QA after each merge, and refreshes the feature map, specs and architecture docs on the user's own Claude subscription. Use when the user wants LynnCraft to run automatically, on GitHub, or on every PR.
+description: Set up LynnCraft on GitHub for this repository — one workflow that verifies every pull request (specs still match the code, every linked test passes) and blocks the merge until they agree. Free, no model, no secret. Use when the user wants LynnCraft on GitHub or on every PR, and offer it once the first time the user works on code in a repository that doesn't have it.
 ---
 
 # Set up LynnCraft on GitHub
 
-One workflow file and a copy of LynnCraft's checks do it. The pull-request checks and QA need nothing else. The docs refresh needs one secret: a token for the user's Claude subscription.
+One workflow file and a copy of LynnCraft's checks. On every pull request, GitHub runs the same verification as the `verify` skill and comments with the result. Nothing runs after a merge: specs, code and tests change together in the pull request. No model, no secret, no cost.
 
 ## Where it runs
 
-Claude Code or Codex: it writes a workflow into the repository and opens a pull request with `gh`. In Claude chat, explain what it sets up and ask the user to run it in Claude Code or Codex.
+Work in a checkout of the user's repository: the current repository in Claude Code or Codex, or the repository cloned into the workspace of a Claude Project connected to GitHub. Commit what you write and push it on a branch with a pull request, unless the user asks you to push to the default branch. If you can't run commands here or there's no checkout (a plain chat), say that LynnCraft works in Claude Code, Codex, or a Claude Project connected to GitHub, and stop. If the repository isn't on GitHub, say so.
 
-The script is bundled with this skill: `<skill folder>` below is the folder this SKILL.md is in (if it has no `scripts/` folder, use the plugin's root folder instead: `${CLAUDE_PLUGIN_ROOT}` in Claude Code, `${PLUGIN_ROOT}` in Codex).
+LynnCraft's checks are one script in the plugin's `scripts/` folder, two folders up from this SKILL.md. Run it as `${CLAUDE_PLUGIN_ROOT}/scripts/agentforge.mjs`; where that placeholder isn't filled in (Codex), use `../../scripts/agentforge.mjs` from this skill's folder.
 
 ## Steps
 
-1. **Check the repository.** Confirm it is on GitHub (`git remote get-url origin`) and that the GitHub CLI is signed in (`gh auth status`). Find the default branch: `gh repo view --json defaultBranchRef --jq .defaultBranchRef.name`. If `.github/workflows/agentforge.yml` already exists, compare it with the template and offer to update it instead.
-2. **Explain before changing anything.** In a few lines, tell the user what the workflow does — a comment on every PR with the checks, a QA check that runs each acceptance criterion's tests and fails the PR's QA check when one fails (both free, no model), QA re-recorded on the default branch after each merge, and a docs refresh after each merge that uses their Claude subscription and commits to the default branch — and ask to go ahead.
-3. **Add the workflow and the checks.** Copy `<skill folder>/templates/agentforge.yml` to `.github/workflows/agentforge.yml`. If the default branch is not `main`, change the `branches: [main]` line to it. Then copy the checks into the repo — CI runs this copy, because the plugin's own repository is private:
+1. **Check the repository.** Confirm it's on GitHub (`git remote get-url origin`) and that you can use GitHub (`gh auth status`). Find the default branch: `gh repo view --json defaultBranchRef --jq .defaultBranchRef.name`. If `.github/workflows/agentforge.yml` already exists, compare it with the template and offer to update it instead.
+2. **Say what it does, in two lines,** and ask to go ahead: every pull request gets a LynnCraft check and one comment; the check fails when a change breaks an acceptance criterion without updating its spec, or a linked test fails, and the merge waits until it passes.
+3. **Add the workflow and the checks.** Copy `${CLAUDE_PLUGIN_ROOT}/templates/agentforge.yml` to `.github/workflows/agentforge.yml`. Then copy the checks into the repository (CI runs this copy):
 
    ```bash
-   node "<skill folder>/scripts/agentforge.mjs" install-ci
+   node "${CLAUDE_PLUGIN_ROOT}/scripts/agentforge.mjs" install-ci
    ```
 
    It writes `.agentforge/bin/`. Commit it with the workflow. Running this skill again replaces the copy with the current plugin's version.
-4. **The Claude token.** The user runs this in their own terminal (it opens a browser to sign in, so you can't run it for them):
+4. **Open a pull request.** Create a branch `lynncraft/setup`, commit the workflow and `.agentforge/bin/`, push, and open a pull request titled "Verify every pull request with LynnCraft", saying what it does in the body. That pull request is the first one LynnCraft verifies. Give the user the link and ask them to merge it.
+5. **Make the check required,** once the setup pull request is merged, so a failing check blocks the merge. With the user's go-ahead:
 
    ```bash
-   claude setup-token
+   gh api -X PUT "repos/{owner}/{repo}/branches/<default branch>/protection" --input - <<'JSON'
+   { "required_status_checks": { "strict": false, "contexts": ["verify"] }, "enforce_admins": false, "required_pull_request_reviews": null, "restrictions": null }
+   JSON
    ```
 
-   Then they store what it prints as a repository secret — they can paste it when prompted:
-
-   ```bash
-   gh secret set CLAUDE_CODE_OAUTH_TOKEN
-   ```
-
-   This needs a Pro, Max, Team or Enterprise plan. A user without a Claude subscription (for example, on Codex) skips this step. Without the secret, the PR check still runs and the docs refresh is skipped with a note. To use an API key instead, they set `ANTHROPIC_API_KEY` and you change the workflow's `claude_code_oauth_token` line to `anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}`.
-5. **Open a pull request.** With the user's go-ahead: create a branch `agentforge/setup`, commit the workflow and `.agentforge/bin/`, push, and run `gh pr create --title "Add LynnCraft checks and docs refresh" --body "..."`, saying what it does in the body. The PR itself is the first one LynnCraft checks.
-6. **After merging,** suggest running the docs refresh once by hand (`gh workflow run LynnCraft`) so the feature map exists before the next PR.
+   If the branch already has protection rules, read them first (`gh api repos/{owner}/{repo}/branches/<default branch>/protection`) and add `verify` to the existing required checks instead of replacing them. If GitHub refuses (some private repositories on the free plan can't use branch protection, or the user isn't an admin), tell the user: the check still runs and comments on every pull request, it just can't block the merge by itself.
 
 ## Notes for the user
 
-- If the default branch is protected against direct pushes, the docs job's commit fails; allow GitHub Actions to push, or ask to change the job to open a pull request instead.
-- The Spec drift and Architecture checks are advisory. The QA check fails when a criterion's test fails or a linked test can't be found (criteria with no test yet are only listed); it blocks merges only if the user makes it a required check in branch protection — suggest trying it on a few PRs first.
-- The qa-record job pushes to the default branch, like the docs refresh.
-- To turn the local Claude Code hooks off (Codex doesn't run them), put `{ "hooks": { "prePush": false, "sessionStart": false } }` in `.agentforge/config.json`.
+- A repository with no feature map yet passes the check with a note; verification starts working once the `feature-map` skill has run.
+- Criteria and journeys with no test yet are listed, not failed. Only a failing or missing linked test, or a criterion the change breaks without updating its spec, fails the check.
+- The browser tests linked to criteria or journeys run against the app started locally on GitHub's machine, never against the live site (see the `verify` skill).
+- To turn off the note Claude Code gets at the start of a session, put `{ "hooks": { "sessionStart": false } }` in `.agentforge/config.json`.

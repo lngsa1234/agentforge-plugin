@@ -7,14 +7,6 @@
           { "type": "command", "command": "node \"${CLAUDE_PLUGIN_ROOT}/scripts/agentforge.mjs\" hook session-start", "timeout": 10 }
         ]
       }
-    ],
-    "PreToolUse": [
-      {
-        "matcher": "Bash",
-        "hooks": [
-          { "type": "command", "command": "node \"${CLAUDE_PLUGIN_ROOT}/scripts/agentforge.mjs\" hook pre-bash", "timeout": 30 }
-        ]
-      }
     ]
   }
 }

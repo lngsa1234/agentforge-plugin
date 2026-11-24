@@ -31,20 +31,26 @@
 //     must cite files that exist, and each workflow's features must be in the feature map.
 //     Sets their status and writes docs/architecture/workflows/.
 //
-//   node agentforge.mjs pr-check [--base BRANCH] [--root DIR] [--strict]
-//     Compares the current branch with BASE (default: the remote default branch, else
-//     main) and prints the Spec drift and Architecture checks, the same ones LynnCraft
-//     posts on pull requests. Advisory: exits 0 unless --strict and there are findings.
+//   node agentforge.mjs verify [--base BRANCH] [--root DIR] [--runner …] [--ci]
+//     The verdict GitHub runs on every pull request: compares the branch with BASE
+//     (default: the remote default branch, else main) and runs every linked test, for
+//     criteria and journeys. Exits 1 when something must be fixed before merging: a
+//     criterion the branch breaks without updating its spec, or a failing or missing test.
+//     Without --ci it also records the QA results in the feature map and baseline.
 //
-//   node agentforge.mjs hook session-start|pre-bash
-//     Claude Code hooks (hooks/hooks.json): reads the hook's JSON on stdin.
+//   node agentforge.mjs pr-check [--base BRANCH] [--root DIR] [--strict]
+//     The spec drift and architecture part of verify alone. Advisory: exits 0 unless
+//     --strict and there are findings.
+//
+//   node agentforge.mjs hook session-start
+//     The Claude Code session-start hook (hooks/hooks.json): reads its JSON on stdin.
 //
 // No network, no model, no dependencies beyond Node 18+ and git.
 import { execFileSync } from 'node:child_process'
 import { copyFileSync, existsSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { basename, dirname, join, resolve } from 'node:path'
 import { checkFeatureSpec, featureSpecMarkdown, normalizeFeatureSpec, MIN_CRITERIA } from './lib/featureSpec.js'
-import { pullRequestChecks, recheckCriteria, specPath, WORKFLOWS_FILE, workflowDocPath } from './lib/prChecks.js'
+import { architectureCheck, architectureReport, pullRequestChecks, recheckCriteria, specDriftCheck, specDriftReport, specPath, WORKFLOWS_FILE, workflowDocPath } from './lib/prChecks.js'
 import { normalizeWorkflowMap, workflowIndexMarkdown, workflowMarkdown } from './lib/workflowMap.js'
 import { architectureProblems, c4ComponentsMarkdown, c4ContainersMarkdown, componentsDocPath, normalizeArchitectureMap } from './lib/architectureMap.js'
 import { baselineMarkdown, checkBaseline, normalizeBaseline } from './lib/productBaseline.js'
@@ -405,12 +411,29 @@ function headEvidence(root, feature) {
 // write: false (CI) leaves the feature map and spec pages alone and only reports.
 // retries: a file with a failed test runs again that many times; a test that fails and
 // then passes counts as passing and is reported as flaky.
+// The stored product baseline: { stored, document } (the file may wrap the document), or null.
+function loadBaselineDocument(root) {
+  const text = readText(root, BASELINE_PATH)
+  if (text === null) return null
+  try {
+    const stored = JSON.parse(text)
+    const document = stored?.document || stored
+    return document && typeof document === 'object' ? { stored, document } : null
+  } catch { return null }
+}
+
 export function checkQa(root, { runner: wanted = '', now = new Date().toISOString(), runFile = runTestFile, write = true, retries = 0, browserGate = runFile === runTestFile ? playwrightGate : () => ({ run: true, cleanup: () => {} }) } = {}) {
   const map = loadFeatureMap(root)
   if (!map) return { error: `No ${MAP_PATH} yet. Run the feature-map skill first.`, nothingToCheck: true }
+  // The product baseline's journeys can name end-to-end tests too (journey.tests).
+  const baseline = loadBaselineDocument(root)
+  const journeys = baseline ? normalizeBaseline(baseline.document).journeys : []
   // Retired (deprecated or removed) features keep their last QA result as history; their tests aren't run.
-  const linked = map.features.filter(feature => !isRetired(feature)).flatMap(feature => (feature.spec?.document?.acceptanceCriteria || []).flatMap(criterion => Array.isArray(criterion.tests) ? criterion.tests : []))
-  if (!linked.length) return { error: 'No acceptance criterion names a test yet. Run the qa skill to link tests to criteria.', nothingToCheck: true }
+  const linked = [
+    ...map.features.filter(feature => !isRetired(feature)).flatMap(feature => (feature.spec?.document?.acceptanceCriteria || []).flatMap(criterion => Array.isArray(criterion.tests) ? criterion.tests : [])),
+    ...journeys.flatMap(journey => journey.tests),
+  ]
+  if (!linked.length) return { error: 'No acceptance criterion or journey names a test yet. Run the verify skill to link tests.', nothingToCheck: true, journeys: journeys.map(journey => ({ id: journey.id, title: journey.title, qa: 'untested', linked: false })) }
   const runner = detectRunner(root, wanted)
   if (!runner) return { error: 'Could not tell which test runner this repository uses. Pass --runner node, jest or vitest.' }
   // Run each linked file once.
@@ -470,8 +493,20 @@ export function checkQa(root, { runner: wanted = '', now = new Date().toISOStrin
     report.push({ name: feature.name, ...qa, failing: criteria.filter(criterion => criterion.qa === 'fail').map(criterion => criterion.id), uncommitted: Boolean(feature.qa.evidence.uncommitted) })
   }
   if (write) writeFileSync(join(root, MAP_PATH), `${JSON.stringify(map, null, 2)}\n`)
+  // Each journey's end-to-end tests, judged the same way as a criterion's.
+  const outcome = test => notRun.has(String(test.path || '').replace(/^\.?\//, '')) ? 'not_run' : testOutcome(results[test.path], test.name)
+  const journeyReport = journeys.map(journey => ({ id: journey.id, title: journey.title, linked: journey.tests.length > 0, qa: journey.tests.length ? criterionQa(journey.tests.map(outcome)) : 'untested' }))
+  if (write && baseline && journeyReport.some(item => item.linked)) {
+    const raw = Array.isArray(baseline.document.journeys) ? baseline.document.journeys : []
+    for (const item of journeyReport) {
+      const target = raw.find(journey => String(journey?.title || '').trim() === item.title)
+      if (target && item.linked) target.qa = item.qa
+    }
+    writeFileSync(join(root, BASELINE_PATH), `${JSON.stringify(baseline.stored, null, 2)}\n`)
+    try { checkProductBaseline(root, { now }) } catch {}   // rewrites the baseline page with the results
+  }
   const runners = [...new Set([runner, ...files.filter(file => existsSync(join(root, file))).map(file => fileRunner(root, file, runner))])]
-  return { runner: runners.join('+'), files, missingFiles, flaky, report, browserSkipped }
+  return { runner: runners.join('+'), files, missingFiles, flaky, report, journeys: journeyReport, browserSkipped }
 }
 
 // The QA report as markdown lines. In CI (ci: true) the check fails when a criterion's
@@ -480,6 +515,7 @@ export function qaReport(result, { ci = false } = {}) {
   // In CI, a repo with nothing to check yet passes with a note rather than failing every PR.
   if (result.error) return { lines: [ci && result.nothingToCheck ? `QA skipped: ${result.error}` : result.error], exitCode: ci && result.nothingToCheck ? 0 : 1 }
   const done = result.report.filter(item => item.status === 'complete').length
+  const journeys = result.journeys || []
   const lines = [`# QA: ${done} of ${result.report.length} features fully tested (${result.runner}, ${result.files.length} test files)`, '']
   const WORD = { complete: 'every criterion passes', in_progress: 'partly tested', rejected: 'a test fails', not_started: 'no passing test' }
   for (const item of result.report) {
@@ -488,10 +524,15 @@ export function qaReport(result, { ci = false } = {}) {
     if (gaps.length) lines.push(`  - Not covered: ${gaps.map(gap => `${gap.id}${gap.qa === 'missing' ? ' (linked test not found)' : ''}`).join(', ')}`)
     if (item.uncommitted && !ci) lines.push('  - Its code has uncommitted changes, so this result isn’t tied to a commit. Commit, then run check-qa again.')
   }
+  if (journeys.length) {
+    const JOURNEY_WORD = { pass: '✓ end-to-end test passes', fail: '✗ end-to-end test fails', missing: '? end-to-end test not found', untested: '— no end-to-end test yet' }
+    lines.push('', `Journeys: ${journeys.filter(item => item.qa === 'pass').length} of ${journeys.length} pass their end-to-end test`)
+    for (const item of journeys) lines.push(`- **${item.id} ${item.title}**: ${item.linked ? JOURNEY_WORD[item.qa] || JOURNEY_WORD.untested : JOURNEY_WORD.untested}`)
+  }
   if (result.missingFiles.length) lines.push('', `Test files not found: ${result.missingFiles.join(', ')}`)
   if (result.flaky?.length) lines.push('', `Flaky (failed, then passed on retry): ${result.flaky.join('; ')}`)
   if (result.browserSkipped) lines.push('', `Browser tests not run: ${result.browserSkipped.reason} (${result.browserSkipped.files.join(', ')}). Their criteria count as untested. To run them, start the app locally and point them at it with \`{ "qa": { "browser": { "env": { "<the variable your config reads>": "http://localhost:3000" } } } }\` in .agentforge/config.json, or set \`"allowRemote": true\` there to run them against the deployed site.`)
-  const failing = result.report.some(item => item.counts.failing || item.gaps.some(gap => gap.qa === 'missing')) || result.missingFiles.length > 0
+  const failing = result.report.some(item => item.counts.failing || item.gaps.some(gap => gap.qa === 'missing')) || journeys.some(item => item.linked && (item.qa === 'fail' || item.qa === 'missing')) || result.missingFiles.length > 0
   if (ci) lines.push('', failing ? '**QA failed:** a criterion’s test fails or can’t be found.' : '**QA passed:** every linked test passes.')
   return { lines, exitCode: ci && failing ? 1 : 0 }
 }
@@ -733,12 +774,89 @@ function printChecks({ base, files, checks }) {
   }
 }
 
-// ---- hooks --------------------------------------------------------------------------
-// Claude Code hooks (hooks/hooks.json) call these so users get Maya and Alex without
-// naming a skill. Each reads the hook's JSON on stdin and never fails the session: any
-// error means "say nothing".
+// ---- verify -----------------------------------------------------------------------
+// One verdict for a branch: what GitHub runs on every pull request (--ci) and what the
+// verify skill runs on request. Code decides; nothing here asks a model.
+//   Must fix (blocks the merge): an acceptance criterion whose cited code the branch
+//     changed so it no longer holds, while its spec didn't change with it; a linked test
+//     (a criterion's or a journey's) that fails or can't be found.
+//   Worth a look (doesn't block): feature code changed while its spec didn't (it may be a
+//     refactor), features with no complete spec, new code no feature owns, architecture
+//     findings, criteria and journeys with no test yet.
+export async function verify(root, { base = '', ci = false, runner = '', now, runFile } = {}) {
+  let pr
+  try {
+    const against = base || defaultBase(root)
+    const files = parseNameStatus(git(root, ['diff', '--name-status', '-M', `${against}...HEAD`]))
+    const features = loadFeatureMap(root)?.features || []
+    const broken = await recheckCriteria({ files, features, getText: headText(root) })
+    pr = { base: against, files, spec: specDriftReport({ files, features, broken }), architecture: architectureReport({ files, record: loadDecisionRecords(root), workflows: loadWorkflows(root) }) }
+  } catch (error) {
+    pr = { error: `Couldn't compare this branch with ${base || 'its base branch'}${error?.message ? ` (${String(error.message).split('\n')[0]})` : ''}.` }
+  }
+  const qa = checkQa(root, { runner, ...(now ? { now } : {}), ...(runFile ? { runFile } : {}), ...(ci ? { write: false, retries: 1 } : {}) })
+  return { pr, qa, ci }
+}
 
-const PUSH_OR_PR = /(^|[;&|(]\s*|\s)(git\s+(-C\s+\S+\s+)?push|gh\s+pr\s+create)(\s|$)/
+export function verifyReport({ pr, qa, ci }) {
+  const mustFix = []
+  if (pr.error) (ci ? mustFix : []).push(pr.error)
+  for (const item of pr.spec?.broken || []) {
+    for (const criterion of item.criteria) mustFix.push(`**${item.name} ${criterion.id}** no longer holds: its cited code${criterion.quote ? ` \`${criterion.quote.slice(0, 80)}\`` : ''} is no longer in \`${criterion.path}\`. Fix the code, or, if the behavior changed on purpose, update \`${item.specPath}\` in this branch.`)
+  }
+  if (qa.error && !qa.nothingToCheck) mustFix.push(`Tests couldn't run: ${qa.error}`)
+  for (const item of qa.report || []) {
+    if (item.failing.length) mustFix.push(`**${item.name}**: the test for ${item.failing.join(', ')} fails.`)
+    const missing = item.gaps.filter(gap => gap.qa === 'missing').map(gap => gap.id)
+    if (missing.length) mustFix.push(`**${item.name}**: the linked test for ${missing.join(', ')} wasn't found.`)
+  }
+  for (const item of qa.journeys || []) {
+    if (!item.linked) continue
+    if (item.qa === 'fail') mustFix.push(`**Journey ${item.id} ${item.title}**: its end-to-end test fails.`)
+    if (item.qa === 'missing') mustFix.push(`**Journey ${item.id} ${item.title}**: its linked end-to-end test wasn't found.`)
+  }
+  for (const file of qa.missingFiles || []) mustFix.push(`Test file \`${file}\` is linked but doesn't exist.`)
+
+  const lines = ['# LynnCraft verify', '']
+  lines.push(mustFix.length ? `❌ **Not ready to merge.** ${mustFix.length} ${mustFix.length === 1 ? 'thing needs' : 'things need'} fixing first.` : '✅ **Ready to merge.** The specs, the code and the tests agree.')
+  if (pr.base) lines.push('', `Compared with \`${pr.base}\`: ${pr.files.length} changed file${pr.files.length === 1 ? '' : 's'}.`)
+  if (mustFix.length) lines.push('', '## Must fix', ...mustFix.map(item => `- ${item}`))
+  const review = []
+  if (pr.spec && !pr.spec.featureMapEmpty) {
+    const spec = specDriftCheck({ ...pr.spec, broken: [] })
+    if (spec.conclusion !== 'success' && spec.text) review.push('### Specs (Maya)', spec.text, '')
+  }
+  if (pr.spec?.featureMapEmpty) review.push('### Specs (Maya)', 'This repository has no feature map yet, so there are no specs to compare with. The feature-map skill builds one.', '')
+  if (pr.architecture) {
+    const architecture = architectureCheck(pr.architecture)
+    if (architecture.conclusion !== 'success' && architecture.text) review.push('### Architecture (Alex)', architecture.text, '')
+  }
+  const untested = (qa.report || []).flatMap(item => item.gaps.filter(gap => gap.qa === 'untested').map(gap => `${item.name} ${gap.id}`))
+  const noJourneyTest = (qa.journeys || []).filter(item => !item.linked).map(item => `${item.id} ${item.title}`)
+  if (untested.length || noJourneyTest.length) {
+    review.push('### Not tested yet (QA, Priya)')
+    if (untested.length) review.push(`- Criteria with no test: ${untested.slice(0, 15).join(', ')}${untested.length > 15 ? ` and ${untested.length - 15} more` : ''}`)
+    if (noJourneyTest.length) review.push(`- Journeys with no end-to-end test: ${noJourneyTest.join(', ')}`)
+    review.push('')
+  }
+  if (review.length) lines.push('', '## Worth a look (doesn’t block the merge)', '', ...review)
+  const tests = qaReport(qa).lines
+  lines.push('', '## Test results', '', ...tests)
+  return { lines: lines.join('\n').replace(/\n{3,}/g, '\n\n').split('\n'), mustFix, exitCode: mustFix.length ? 1 : 0 }
+}
+
+function printVerify(result) {
+  const { lines, exitCode } = verifyReport(result)
+  console.log(lines.join('\n'))
+  if (result.ci && process.env.GITHUB_STEP_SUMMARY) { try { writeFileSync(process.env.GITHUB_STEP_SUMMARY, `${lines.join('\n')}\n`, { flag: 'a' }) } catch {} }
+  return exitCode
+}
+
+// ---- hooks --------------------------------------------------------------------------
+// The Claude Code session-start hook (hooks/hooks.json) calls this so Claude knows what
+// LynnCraft can do in the repository. It reads the hook's JSON on stdin and never fails
+// the session: any error means "say nothing". Checks don't run here: GitHub runs them on
+// every pull request, and the verify skill runs them on request.
 
 export function readConfig(root) {
   try { return JSON.parse(readText(root, '.agentforge/config.json') || '{}') } catch { return {} }
@@ -764,31 +882,8 @@ export function sessionStartContext(root) {
     lines.push(`LynnCraft: the feature map lists ${live.length} features${open ? `; ${open} ${open === 1 ? "has" : "have"} no complete spec (the lynncraft:feature-spec skill writes them)` : ', all with complete specs'}.`)
     if (!existsSync(join(root, BASELINE_PATH))) lines.push('There is no product baseline yet; the lynncraft:product-baseline skill writes the users, the journeys across features, and how a PRD lines up with the code.')
   }
-  if (!existsSync(join(root, '.github/workflows/agentforge.yml'))) lines.push('The LynnCraft GitHub workflow is not set up here; the lynncraft:setup-github skill adds checks on every pull request and keeps the docs current after each merge. Mention it once if the user asks about automation or GitHub.')
+  if (!existsSync(join(root, '.github/workflows/agentforge.yml'))) lines.push('LynnCraft is not set up on GitHub here yet: the lynncraft:setup-github skill adds the verify check to every pull request, so a merge waits until specs, code and tests agree. Offer to set it up once, the first time the user works on code here.')
   return lines.join(' ')
-}
-
-// Before `git push` or `gh pr create`: run the PR check. With findings, stop the command
-// once per commit and hand the findings to Claude; running it again goes through. A repo
-// with no feature map and nothing major in the diff is never stopped.
-export async function prePushDecision(root, command, { base = '' } = {}) {
-  if (!root || !PUSH_OR_PR.test(String(command || '')) || !hookEnabled(root, 'prePush')) return null
-  const head = git(root, ['rev-parse', 'HEAD'])
-  const marker = join(resolve(root, git(root, ['rev-parse', '--git-dir'])), 'agentforge', `checked-${head}`)
-  if (existsSync(marker)) return null
-  const result = await prCheck(root, base)
-  const findings = result.checks.filter(check => check.conclusion !== 'success' && check.title !== 'No feature map yet')
-  if (!findings.length) return null
-  mkdirSync(dirname(marker), { recursive: true })
-  writeFileSync(marker, `${new Date().toISOString()}\n`)
-  const report = findings.map(check => `### ${check.name}: ${check.title}\n${check.summary}\n${check.text}`).join('\n\n')
-  return {
-    hookSpecificOutput: {
-      hookEventName: 'PreToolUse',
-      permissionDecision: 'deny',
-      permissionDecisionReason: `LynnCraft's pre-PR check (advisory) found items to review before this goes to a pull request. Compared with ${result.base}.\n\n${report}\n\nShow these findings to the user and offer to fix them; the lynncraft:pr-check skill says how to handle each one. If the user wants to go ahead as it is, run the same command again: LynnCraft does not stop the same commit twice.`,
-    },
-  }
 }
 
 async function readStdin() {
@@ -800,15 +895,10 @@ async function readStdin() {
 async function runHook(name) {
   try {
     const input = await readStdin()
-    // Most Bash calls are not a push: answer those before touching git.
-    if (name === 'pre-bash' && !PUSH_OR_PR.test(String(input.tool_input?.command || ''))) process.exit(0)
     const root = repoRoot(input.cwd || process.cwd())
     if (name === 'session-start') {
       const context = sessionStartContext(root)
       if (context) process.stdout.write(JSON.stringify({ hookSpecificOutput: { hookEventName: 'SessionStart', additionalContext: context } }))
-    } else if (name === 'pre-bash') {
-      const decision = await prePushDecision(root, input.tool_input?.command)
-      if (decision) process.stdout.write(JSON.stringify(decision))
     }
   } catch {
     // A hook must never break the session.
@@ -825,6 +915,7 @@ async function main() {
   if (options.command === 'check-workflows') process.exit(printWorkflows(checkWorkflows(options.root)))
   if (options.command === 'check-architecture') process.exit(printArchitecture(checkArchitecture(options.root)))
   if (options.command === 'check-qa') process.exit(printQa(checkQa(options.root, { runner: options.runner || '', ...(options.ci ? { write: false, retries: 1 } : {}) }), { ci: options.ci }))
+  if (options.command === 'verify') process.exit(printVerify(await verify(options.root, { base: options.base, ci: options.ci, runner: options.runner || '' })))
   if (options.command === 'pr-check') {
     const result = await prCheck(options.root, options.base)
     printChecks(result)
@@ -832,7 +923,7 @@ async function main() {
   }
   if (options.command === 'install-ci') { const done = installCi(options.root); console.log(`Copied LynnCraft's checks${done.version ? ` (${done.version})` : ''} to ${done.path}/ (${done.files} files). Commit them with the workflow.`); process.exit(0) }
   if (options.command === 'hook') return runHook(process.argv[3])
-  console.log('Usage: agentforge.mjs check-specs [--root DIR] | check-baseline [--root DIR] | check-workflows [--root DIR] | check-architecture [--root DIR] | check-qa [--root DIR] [--runner node|jest|vitest] [--ci] | pr-check [--base BRANCH] [--root DIR] [--strict] | install-ci [--root DIR] | hook session-start|pre-bash')
+  console.log('Usage: agentforge.mjs check-specs [--root DIR] | check-baseline [--root DIR] | check-workflows [--root DIR] | check-architecture [--root DIR] | check-qa [--root DIR] [--runner node|jest|vitest] [--ci] | verify [--base BRANCH] [--root DIR] [--runner node|jest|vitest] [--ci] | pr-check [--base BRANCH] [--root DIR] [--strict] | install-ci [--root DIR] | hook session-start')
   process.exit(2)
 }
 

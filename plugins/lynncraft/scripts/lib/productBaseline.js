@@ -15,6 +15,12 @@ const ACTORS = ['user', 'agent', 'system']
 
 const text = (value) => (typeof value === 'string' ? value.trim() : '')
 const strings = (value) => (Array.isArray(value) ? value.map(text).filter(Boolean) : [])
+// The end-to-end tests that check a journey ({ path, name }), and what verify found when
+// it ran them: pass | fail | missing (a linked test wasn't found) | untested.
+export const JOURNEY_QA = Object.freeze(['pass', 'fail', 'missing', 'untested'])
+const testRefs = (value) => (Array.isArray(value) ? value : [])
+  .map(test => ({ path: text(test?.path).replace(/^\.?\//, ''), name: text(test?.name) }))
+  .filter(test => test.path && test.name)
 const slugify = (value) => String(value || '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 60)
 
 // A feature's short id: "owner/repo::goals" and "goals" are both "goals".
@@ -34,6 +40,8 @@ export function normalizeBaseline(result) {
         .filter(step => step.action),
       outcome: text(item?.outcome),
       failures: strings(item?.failures),
+      tests: testRefs(item?.tests),
+      ...(JOURNEY_QA.includes(item?.qa) ? { qa: item.qa } : {}),
     }))
     .filter(item => item.title || item.steps.length)
     .slice(0, MAX_JOURNEYS)
@@ -101,6 +109,15 @@ export function checkBaseline(baseline, features) {
 // The doc viewer's heading anchors (repoDocs.headingSlug), so the journey table links land.
 const anchor = (text) => String(text).toLowerCase().replace(/[`*_~[\]()]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')
 const cell = (value) => String(value || '').replace(/\|/g, '\\|').replace(/\n/g, ' ')
+
+// A journey's end-to-end test, as the baseline page shows it.
+export function journeyTestCell(journey) {
+  const tests = Array.isArray(journey?.tests) ? journey.tests : []
+  if (!tests.length) return 'none yet'
+  const names = tests.map(test => `\`${test.path}\` › ${test.name}`).join('; ')
+  const word = { pass: '✓ passes', fail: '✗ fails', missing: '? test not found' }[journey.qa] || 'linked, not run yet'
+  return `${word} (${names})`
+}
 
 // Mermaid diagrams for the journeys. Labels lose the characters Mermaid would read as
 // syntax; long actions are cut so a node stays readable on a phone.
@@ -197,6 +214,7 @@ export function baselineMarkdown(baseline, features, { checked = null, writtenAt
         journey.user && `- **Who:** ${journey.user}`,
         journey.goal && `- **Goal:** ${journey.goal}`,
         journey.trigger && `- **Starts when:** ${journey.trigger}`,
+        `- **End-to-end test:** ${journeyTestCell(journey)}`,
       ].filter(Boolean), '')
       if (journey.steps.length) out.push('```mermaid', journeyDiagram(journey, nameOf, { agentLane: name }), '```', '')
       if (journey.steps.length) {

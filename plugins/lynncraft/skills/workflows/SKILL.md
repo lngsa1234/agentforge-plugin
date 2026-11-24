@@ -7,9 +7,9 @@ description: Map the product's main runtime flows step by step (.agentforge/work
 
 ## Where the code is
 
-In Claude Code or Codex, use the current repository. In Claude chat, use the user's connected GitHub repository: clone it into your working directory, pass that folder to the script with `--root <folder>`, and commit the files you wrote and push them (on a new branch with a pull request, unless the user asks you to push to the default branch). If no repository is connected, ask the user to connect GitHub and give you access to it; don't ask for a .zip.
+Work in a checkout of the user's repository: the current repository in Claude Code or Codex, or the repository cloned into the workspace of a Claude Project connected to GitHub. Commit what you write and push it on a branch with a pull request, unless the user asks you to push to the default branch. If you can't run commands here or there's no checkout (a plain chat), say that LynnCraft works in Claude Code, Codex, or a Claude Project connected to GitHub, and stop.
 
-The script is bundled with this skill: `<skill folder>` below is the folder this SKILL.md is in (if it has no `scripts/` folder, use the plugin's root folder instead: `${CLAUDE_PLUGIN_ROOT}` in Claude Code, `${PLUGIN_ROOT}` in Codex).
+LynnCraft's checks are one script in the plugin's `scripts/` folder, two folders up from this SKILL.md. Run it as `${CLAUDE_PLUGIN_ROOT}/scripts/agentforge.mjs`; where that placeholder isn't filled in (Codex), use `../../scripts/agentforge.mjs` from this skill's folder.
 
 ## 1. Pick the flows
 
@@ -57,7 +57,7 @@ Not internal utilities. If the user named a flow, map only that one.
 ## 3. Check and write the pages
 
 ```bash
-node "<skill folder>/scripts/agentforge.mjs" check-workflows
+node "${CLAUDE_PLUGIN_ROOT}/scripts/agentforge.mjs" check-workflows
 ```
 
 It checks every cited path against the repository, sets each workflow's status, and writes `docs/architecture/workflows/` (an index and one page per workflow, with a sequence diagram and a step table). It also lists features no workflow serves. Fix what it reports, at most two rounds.

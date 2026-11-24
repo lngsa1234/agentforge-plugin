@@ -18,9 +18,9 @@ Pick the app you use.
 2. Next to **Personal plugins**, click **+** and choose **Add marketplace**.
 3. Paste `lngsa1234/lynncraft-plugin` and confirm.
 4. Find **LynnCraft** in the list and click **Add**.
-5. Turn on **code execution** (in **Settings → Capabilities**), and connect your **GitHub** account so Claude can open your project.
+5. **Use it in a Project connected to your GitHub repository.** Create a Project for your app and connect its GitHub repository. Claude then gets its own workspace with a copy of your code, where LynnCraft reads it, runs its checks and pushes the docs to a branch for you to review.
 
-That's it. LynnCraft is now saved to your account, so it also works on your phone and in Claude Code.
+LynnCraft is now saved to your account, so it also works in your Projects on your phone and in Claude Code. It doesn't run in a plain chat outside a Project: it needs your code and a place to run its checks.
 
 ### Claude Code
 
@@ -49,7 +49,7 @@ Open your project and just ask, in plain words:
 
 1. **"What features does this app have?"** Maya lists every feature she finds in your code.
 2. **"Write the spec for the login feature."** You get a spec with checkable acceptance criteria, each pointing to the code it comes from.
-3. **"Which features are tested?"** Priya shows what's covered by tests and what isn't.
+3. **"Verify this branch."** Priya checks that the specs, the code and the tests agree, and tells you what to fix before merging.
 
 You don't need to remember any commands. When you want something built or fixed, say **"make a work item: …"** and Maya writes it up as a GitHub issue, ready for Alex to plan.
 
@@ -61,53 +61,53 @@ You don't need to remember any commands. When you want something built or fixed,
 | `/lynncraft:feature-spec` | Maya | `docs/specs/<feature>.md` written from the code; each acceptance criterion cites the lines it rests on, and the check verifies every quote |
 | `/lynncraft:product-baseline` | Maya | `docs/product/baseline.md`: who the product is for, the journeys across features, and, if you have a PRD in any format, what it asks for against what's built |
 | `/lynncraft:work-item` | Maya | A request turned into a typed work item (feature, bug or chore) with testable acceptance criteria, filed as a GitHub issue; questions only when it's unclear |
-| `/lynncraft:qa` | Priya | Each acceptance criterion linked to the tests that check it, then run: every feature's QA status, failing tests and untested criteria |
 | `/lynncraft:architecture` | Alex | `docs/architecture/README.md`: how the system is built and the rules the code must keep. Ask for "the architecture" and it runs the three below first |
 | `/lynncraft:architecture-map` | Alex | The C4 container and component diagrams in `docs/architecture/`, every path checked |
 | `/lynncraft:workflows` | Alex | The main runtime flows as sequence diagrams in `docs/architecture/workflows/`, every cited file checked |
 | `/lynncraft:decision-records` | Alex | The decisions already in effect in `docs/adr/`, each naming the code it governs |
 | `/lynncraft:tech-plan` | Alex | The smallest reversible plan for a work item or issue, impact rated none / minor / major, a decision record when major |
-| `/lynncraft:pr-check` | Both | Spec drift and architecture checks on your branch before you open a PR |
-| `/lynncraft:refresh-docs` | Both | The feature map, specs and architecture docs brought up to date in one unattended pass |
-| `/lynncraft:setup-github` | — | A GitHub workflow: the checks and QA on every pull request, and the docs refreshed after each merge |
+| `/lynncraft:verify` | Priya | The same verification GitHub runs on every pull request: specs still match the code, every test linked to a criterion or journey passes. Links tests and offers to write missing ones |
+| `/lynncraft:refresh-docs` | Both | The feature map, specs and architecture docs brought up to date in one pass, for a project that's new to LynnCraft |
+| `/lynncraft:setup-github` | — | Verification on every pull request, which blocks the merge until it passes. Claude offers it the first time |
 
 In Codex, skills start with `$` instead of `/lynncraft:`, for example `$feature-map`. Either way, you don't have to type them: just ask for what you want.
 
 ## Checks quality automatically
 
 - **Docs match the code.** A script checks every spec against your code. Only it can mark a spec "complete".
-- **Tests are run, not assumed.** Each feature shows whether its tests pass. Change the code, and it's marked "needs re-verify".
-- **Before every push.** LynnCraft checks your changes and shows you anything that needs a look.
-- **On GitHub (optional).** Every pull request gets the checks, and the docs update after each merge.
+- **Tests are run, not assumed.** Each feature and journey shows whether its tests pass. Change the code, and it's marked "needs re-verify".
+- **On every pull request.** GitHub verifies the change automatically, whatever tool wrote it, and the merge waits until specs, code and tests agree.
 
-The check before a push runs by itself in Claude Code. In Claude chat or Codex, ask "is this branch OK to PR?"
+Want an early look? Ask "verify this branch".
 
 <details>
 <summary>For developers: the checks and settings</summary>
 
-The bundled script is `scripts/agentforge.mjs` (Node 18+ and git, no dependencies):
+The checks are one script, `scripts/agentforge.mjs` (Node 18+ and git, no dependencies), which every skill runs. Its commands:
 
 - `check-specs`: each acceptance criterion's quote against the file it cites; fixes line numbers that moved; the only thing that marks a spec complete.
-- `check-qa`: runs each criterion's tests and sets the feature's QA status; records the commit and a fingerprint of the feature's code, so later changes read as "needs re-verify".
+- `verify`: what GitHub runs on every pull request. Compares the branch with its base and runs every test linked to a criterion or a journey; fails when a criterion the branch breaks isn't updated in its spec, or a linked test fails or is missing. Records the results with the commit and a fingerprint of each feature's code, so later changes read as "needs re-verify".
 - `check-baseline`: every journey runs through real features, and every PRD requirement cites the feature that builds it.
 - `check-architecture`: every file the C4 map cites exists, and each feature has exactly one component holding only its own code.
 - `check-workflows`: every workflow step's code exists.
-- `pr-check`: compares your branch with its base (the check before a push).
 
-**Browser tests.** Playwright tests linked to criteria run only against localhost, so CI never signs in to your live site. Set the local server in `.agentforge/config.json`, using the variable your Playwright config reads: `{ "qa": { "browser": { "env": { "E2E_BASE_URL": "http://localhost:3000" } } } }`. Add `"allowRemote": true` to test a deployed site. Without Playwright's own Chromium, the installed Google Chrome is used.
+**Browser tests.** Playwright tests linked to criteria or journeys run only against localhost, so CI never signs in to your live site. Set the local server in `.agentforge/config.json`, using the variable your Playwright config reads: `{ "qa": { "browser": { "env": { "E2E_BASE_URL": "http://localhost:3000" } } } }`. Add `"allowRemote": true` to test a deployed site. Without Playwright's own Chromium, the installed Google Chrome is used.
 
-**Turning the automatic checks off.** Put `{ "hooks": { "prePush": false, "sessionStart": false } }` in `.agentforge/config.json`, or set `AGENTFORGE_HOOKS=off`.
+**Making the check required.** `setup-github` asks GitHub to require the `verify` check on your default branch, so a failing check blocks the merge. Some private repositories on GitHub's free plan can't require checks; there it still runs and comments on every pull request.
+
+**The session-start note.** In Claude Code, LynnCraft tells Claude what's missing in the repository when a session starts. Turn it off with `{ "hooks": { "sessionStart": false } }` in `.agentforge/config.json`, or `AGENTFORGE_HOOKS=off`.
 
 </details>
 
 ## Files it keeps in your repository
 
-- `.agentforge/feature-map.json`: the feature map, spec drafts and QA results. Commit it.
-- `.agentforge/product-baseline.json` and `docs/product/baseline.md`: the product baseline and its journeys.
+- `.agentforge/feature-map.json`: the feature map, spec drafts and test results. Commit it.
+- `.agentforge/product-baseline.json` and `docs/product/baseline.md`: the product baseline, its journeys and their end-to-end tests.
 - `docs/specs/`: feature specs, each with its scenarios.
 - `.agentforge/architecture-map.json`, `.agentforge/workflows.json` and the pages they produce in `docs/architecture/`.
 - `docs/architecture/README.md`: the architecture overview.
 - `docs/adr/NNNN-*.md`: decision records, with `paths:` naming the code each one governs.
+- `.github/workflows/agentforge.yml` and `.agentforge/bin/`: the pull request verification, added by `setup-github`.
 
 ## LynnCraft and AgentForge
 

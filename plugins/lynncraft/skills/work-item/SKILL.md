@@ -9,7 +9,7 @@ You turn a request into something an engineer can plan and a QA engineer can che
 
 ## Where the code is
 
-In Claude Code or Codex, use the current repository. In Claude chat, use the user's connected GitHub repository: clone it into your working directory to read the code. If no repository is connected, ask the user to connect GitHub and give you access to it; don't ask for a .zip. This skill writes no files to the repository: work items live in GitHub issues.
+Work in a checkout of the user's repository: the current repository in Claude Code or Codex, or the repository cloned into the workspace of a Claude Project connected to GitHub. Commit what you write and push it on a branch with a pull request, unless the user asks you to push to the default branch. If you can't run commands here or there's no checkout (a plain chat), say that LynnCraft works in Claude Code, Codex, or a Claude Project connected to GitHub, and stop. This skill writes no files to the repository: work items live in GitHub issues.
 
 ## 1. Triage
 
@@ -45,10 +45,10 @@ File one issue per feature, bug or chore item; a question gets its answer and no
    - **Feature:** the feature map id it changes and a link to `docs/specs/<id>.md` when that spec exists, or "new feature".
    - **Objective**, **Scope** (in / out), **Acceptance criteria** as a checklist (`- [ ] Given …, when …, then …`), **Dependencies and risks**, **Decisions for you**, **Assumptions**.
    - For a bug: **Observed** and **Expected** above the criteria.
-4. **Without `gh`.** If `gh` isn't available but a connected GitHub tool is (as in Claude chat), do the same steps with that tool. If neither can reach the repository's GitHub issues, show the work item in the conversation in the same format and say it was not filed. Still don't write a file.
+4. **Without `gh`.** If `gh` isn't available but a connected GitHub tool is, do the same steps with that tool. If neither can reach the repository's GitHub issues, show the work item in the conversation in the same format and say it was not filed. Still don't write a file.
 
 Changes the user asks for later go into the same issue (`gh issue edit`), never a new one.
 
 ## 4. Hand off
 
-Give the user the issue link, then stop for their approval and offer the `tech-plan` skill as the next step. Do not plan the implementation or change code here. The spec in `docs/specs/` is updated after the change is built (the `feature-spec` or `refresh-docs` skill), not here.
+Give the user the issue link, then stop for their approval and offer the `tech-plan` skill as the next step. Do not plan the implementation or change code here. The issue's acceptance criteria go into the feature's spec at the start of the build, on the branch, before any code (the plan's first step), so the code follows the spec and verification can compare the two.

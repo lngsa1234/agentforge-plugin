@@ -7,7 +7,7 @@ description: Turn an approved requirement into the smallest reversible, code-gro
 
 ## Where the code is
 
-In Claude Code or Codex, use the current repository. In Claude chat, use the user's connected GitHub repository: clone it into your working directory, and commit the files you wrote and push them (on a new branch with a pull request, unless the user asks you to push to the default branch). If no repository is connected, ask the user to connect GitHub and give you access to it; don't ask for a .zip.
+Work in a checkout of the user's repository: the current repository in Claude Code or Codex, or the repository cloned into the workspace of a Claude Project connected to GitHub. Commit what you write and push it on a branch with a pull request, unless the user asks you to push to the default branch. If you can't run commands here or there's no checkout (a plain chat), say that LynnCraft works in Claude Code, Codex, or a Claude Project connected to GitHub, and stop.
 
 ## 1. Review the requirement first
 
@@ -30,10 +30,12 @@ A **major** impact gets a decision record: write `docs/adr/NNNN-<slug>.md` in th
 ## 4. Write the plan
 
 - Summary, and the impact level with one line of why.
+- **Spec first.** Step 1 is always the spec: add or change the feature's acceptance criteria in `.agentforge/feature-map.json` (the `feature-spec` skill), on the branch, before any code. A new behavior with no criterion doesn't get built; a removed behavior loses its criterion. The code then follows the spec, and verification compares the two.
 - Files to change, and files deliberately left alone.
 - Steps in order, each mapped to the acceptance criterion it serves. Drop any step that maps to nothing.
 - Data and API changes.
-- Tests to add or update, and the verification commands, naming the surface each runs against.
+- Tests to add or update: at least one per new or changed criterion, written with the code by whoever builds it, and an end-to-end test for any journey the change alters. Link each in the same branch.
+- **Done means verified.** The last step is always the `verify` skill on the branch: nothing under *Must fix*, and the new criteria's tests pass. GitHub runs the same verification on the pull request.
 - Risks with mitigations, and the rollback path.
 - Decisions for the user: only genuine judgment calls, each with options and your recommendation. Settle data, privacy, migration and CI questions here, not mid-build.
 
