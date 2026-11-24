@@ -1,14 +1,14 @@
 {
-  "name": "agentforge",
+  "name": "lynncraft",
   "owner": {
     "name": "Ling",
     "url": "https://github.com/lngsa1234"
   },
-  "description": "AgentForge: an AI product manager, technical lead and QA engineer for your repository, on your own Claude subscription.",
+  "description": "LynnCraft: an AI product manager, technical lead and QA engineer for your repository, on your own Claude subscription. By Lynn, a solo builder, for solo builders.",
   "plugins": [
     {
-      "name": "agentforge",
-      "source": "./plugins/agentforge",
+      "name": "lynncraft",
+      "source": "./plugins/lynncraft",
       "description": "Feature map and specs from your code with every citation verified, acceptance criteria linked to tests that are run, architecture with C4 diagrams, workflows and decision records, and pre-PR checks."
     }
   ]
