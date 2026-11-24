@@ -17,7 +17,7 @@ It runs on your own Claude subscription. No server, no API key, no account.
 
 Then restart Claude Code, or run `/reload-plugins`.
 
-**Claude on the web, desktop or mobile:** on claude.ai or in the desktop app, open **Customize → Plugins**, select **Add marketplace**, enter `lngsa1234/agentforge-plugin`, and install **LynnCraft**. The plugin is saved to your account, so its skills also work in chat on your phone and in Claude Code with the same account. Code execution must be on. Chat has no checkout of your repository: attach it as a .zip (on GitHub, **Code → Download ZIP**) or connect GitHub, and Claude gives the docs back as a .zip to commit. The hooks, `pr-check` and `setup-github` need Claude Code.
+**Claude on the web, desktop or mobile:** on claude.ai or in the desktop app, open **Customize → Plugins**, select **Add marketplace**, enter `lngsa1234/agentforge-plugin`, and install **LynnCraft**. The plugin is saved to your account, so its skills also work in chat on your phone and in Claude Code with the same account. Code execution must be on. Connect GitHub and give Claude access to your repository: it reads the code, writes the docs and pushes them, just as in Claude Code. The automatic hooks (the check before a push and the note at the start of a session) run in Claude Code.
 
 ## What it does
 
