@@ -65,7 +65,7 @@ You don't need to remember any commands. When you want something built or fixed,
 | `/lynncraft:architecture-map` | Alex | The C4 container and component diagrams in `docs/architecture/`, every path checked |
 | `/lynncraft:workflows` | Alex | The main runtime flows as sequence diagrams in `docs/architecture/workflows/`, every cited file checked |
 | `/lynncraft:decision-records` | Alex | The decisions already in effect in `docs/adr/`, each naming the code it governs |
-| `/lynncraft:tech-plan` | Alex | The smallest reversible plan for a work item or issue, impact rated none / minor / major, a decision record when major |
+| `/lynncraft:tech-plan` | Alex | The smallest reversible plan for a work item or issue: spec first, the build steps, the engineer's checks (lint, typecheck, unit tests) as tasks, then verify. Impact rated none / minor / major, a decision record when major |
 | `/lynncraft:verify` | Priya | The same verification GitHub runs on every pull request: specs still match the code, every test linked to a criterion or journey passes. Links tests and offers to write missing ones |
 | `/lynncraft:refresh-docs` | Both | The feature map, specs and architecture docs brought up to date in one pass, for a project that's new to LynnCraft |
 | `/lynncraft:setup-github` | — | Verification on every pull request, which blocks the merge until it passes. Claude offers it the first time |

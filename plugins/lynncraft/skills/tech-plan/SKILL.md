@@ -15,7 +15,7 @@ When the requirement is a GitHub issue (a number like `#42` or its link), read i
 
 ## 2. Read the code
 
-Open the files you will change, confirm dependency versions in the manifests, and follow imports to see how the code behaves today. Read `docs/architecture/README.md` and the decision records in `docs/adr/`. Answer every question the code can answer yourself.
+Open the files you will change, confirm dependency versions in the manifests, and follow imports to see how the code behaves today. Note the repository's own quality commands: the `lint`, `typecheck` (or `tsc --noEmit` when there is a `tsconfig.json`) and `test` scripts in `package.json`, or their equivalents (`ruff`, `mypy`, `pytest`, `go vet`, `cargo clippy`…) in other stacks. Read `docs/architecture/README.md` and the decision records in `docs/adr/`. Answer every question the code can answer yourself.
 
 ## 3. Rate the architecture impact
 
@@ -35,6 +35,7 @@ A **major** impact gets a decision record: write `docs/adr/NNNN-<slug>.md` in th
 - Steps in order, each mapped to the acceptance criterion it serves. Drop any step that maps to nothing.
 - Data and API changes.
 - Tests to add or update: at least one per new or changed criterion, written with the code by whoever builds it, and an end-to-end test for any journey the change alters. Link each in the same branch.
+- **Engineer's checks, as tasks.** After the code steps, list the repository's own checks for whoever builds it to run and fix before pushing, with the exact commands from step 2: lint, typecheck, and the unit tests (the changed area first, then the whole suite). Use only commands the repository already has; if it has no linter or type checker, say so and don't add one unless the user agrees. These are the engineer's tasks, not a gate: a failure is fixed in the build, not reported for someone else.
 - **Done means verified.** The last step is always the `verify` skill on the branch: nothing under *Must fix*, and the new criteria's tests pass. GitHub runs the same verification on the pull request.
 - Risks with mitigations, and the rollback path.
 - Decisions for the user: only genuine judgment calls, each with options and your recommendation. Settle data, privacy, migration and CI questions here, not mid-build.
