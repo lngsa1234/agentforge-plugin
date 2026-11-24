@@ -11,7 +11,7 @@ In Claude Code, use the current repository. In Claude chat, use the user's conne
 
 ## 1. Review the requirement first
 
-Check that every acceptance criterion is testable, the scope is explicit and the dependencies are named. Send gaps back to the user (or the `work-item` skill) before planning.
+When the requirement is a GitHub issue (a number like `#42` or its link), read it with `gh issue view <number> --comments`. Check that every acceptance criterion is testable, the scope is explicit and the dependencies are named. Send gaps back to the user (or the `work-item` skill, which updates the same issue) before planning.
 
 ## 2. Read the code
 
@@ -41,4 +41,4 @@ Keep it the smallest reversible change. Over ten files or a new module boundary 
 
 ## 5. Stop
 
-Present the plan and stop for the user's approval. On approval, set a proposed decision record to `accepted`. Do not implement in this skill.
+Present the plan and stop for the user's approval. On approval, set a proposed decision record to `accepted`, and when the requirement is a GitHub issue, post the approved plan as a comment on it (`gh issue comment <number> --body-file <file>`), so the issue holds the whole story. Do not implement in this skill.

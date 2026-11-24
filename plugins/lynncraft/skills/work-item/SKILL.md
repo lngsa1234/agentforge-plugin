@@ -1,6 +1,6 @@
 ---
 name: work-item
-description: Turn a feature request, bug report or idea into a typed work item with testable acceptance criteria, asking only the questions a human must answer — as LynnCraft's Product Manager (Maya). Use when the user describes something to build or fix and before planning it.
+description: Turn a feature request, bug report or idea into a typed work item with testable acceptance criteria, filed as a GitHub issue, asking only the questions a human must answer — as LynnCraft's Product Manager (Maya). Use when the user describes something to build or fix and before planning it.
 ---
 
 # Work item (Maya, Product Manager)
@@ -9,7 +9,7 @@ You turn a request into something an engineer can plan and a QA engineer can che
 
 ## Where the code is
 
-In Claude Code, use the current repository. In Claude chat, use the user's connected GitHub repository: clone it into your working directory, and commit the files you wrote and push them (on a new branch with a pull request, unless the user asks you to push to the default branch). If no repository is connected, ask the user to connect GitHub and give you access to it; don't ask for a .zip.
+In Claude Code, use the current repository. In Claude chat, use the user's connected GitHub repository: clone it into your working directory to read the code. If no repository is connected, ask the user to connect GitHub and give you access to it; don't ask for a .zip. This skill writes no files to the repository: work items live in GitHub issues.
 
 ## 1. Triage
 
@@ -35,6 +35,20 @@ Read `.agentforge/feature-map.json` and the specs in `docs/specs/` to see which 
 
 Label every assumption. Never invent current behavior or metrics.
 
-## 3. Hand off
+## 3. File it as a GitHub issue
 
-Save the requirement where the repository keeps them (`docs/specs/` for a feature that already has a spec, as a proposed change to it; otherwise `docs/requirements/<slug>.md`). Then stop for the user's approval, and offer the `tech-plan` skill as the next step. Do not plan the implementation or change code here.
+File one issue per feature, bug or chore item; a question gets its answer and no issue, an unclear request gets your questions and no issue. Do not write the requirement to a file in the repository.
+
+1. **Look for a duplicate.** Search the open issues (`gh issue list --state open --search "<key words>"`). If one already covers the item, update it (`gh issue edit` or a comment) and link it instead of filing another.
+2. **Label.** Use the type as the label: `feature`, `bug` or `chore`. Create a missing label first (`gh label create <type> --force`).
+3. **File.** `gh issue create --title "<short, user-facing summary>" --label <type> --body-file <file>`, with the body in this order:
+   - **Feature:** the feature map id it changes and a link to `docs/specs/<id>.md` when that spec exists, or "new feature".
+   - **Objective**, **Scope** (in / out), **Acceptance criteria** as a checklist (`- [ ] Given …, when …, then …`), **Dependencies and risks**, **Decisions for you**, **Assumptions**.
+   - For a bug: **Observed** and **Expected** above the criteria.
+4. **Without `gh`.** If `gh` isn't available but a connected GitHub tool is (as in Claude chat), do the same steps with that tool. If neither can reach the repository's GitHub issues, show the work item in the conversation in the same format and say it was not filed. Still don't write a file.
+
+Changes the user asks for later go into the same issue (`gh issue edit`), never a new one.
+
+## 4. Hand off
+
+Give the user the issue link, then stop for their approval and offer the `tech-plan` skill as the next step. Do not plan the implementation or change code here. The spec in `docs/specs/` is updated after the change is built (the `feature-spec` or `refresh-docs` skill), not here.

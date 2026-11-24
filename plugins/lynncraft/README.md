@@ -26,13 +26,13 @@ Then restart Claude Code, or run `/reload-plugins`.
 | `/lynncraft:feature-map` | Maya | `.agentforge/feature-map.json`: every user-facing feature the code implements, with anchors saying where it lives |
 | `/lynncraft:feature-spec` | Maya | `docs/specs/<feature>.md` written from the code; each acceptance criterion cites the lines it rests on, and the check verifies every quote |
 | `/lynncraft:product-baseline` | Maya | `docs/product/baseline.md`: who the product is for, the journeys across features, and, if you have a PRD in any format, what it asks for against what's built |
-| `/lynncraft:work-item` | Maya | A request turned into a typed work item (feature, bug, chore or question) with testable acceptance criteria; questions only when it's unclear |
+| `/lynncraft:work-item` | Maya | A request turned into a typed work item (feature, bug or chore) with testable acceptance criteria, filed as a GitHub issue; questions only when it's unclear |
 | `/lynncraft:qa` | Priya | Each acceptance criterion linked to the tests that check it, then run: every feature's QA status, failing tests and untested criteria |
 | `/lynncraft:architecture` | Alex | `docs/architecture/README.md`: how the system is built and the rules the code must keep. Ask for "the architecture" and it runs the three below first |
 | `/lynncraft:architecture-map` | Alex | The C4 container and component diagrams in `docs/architecture/`, every path checked |
 | `/lynncraft:workflows` | Alex | The main runtime flows as sequence diagrams in `docs/architecture/workflows/`, every cited file checked |
 | `/lynncraft:decision-records` | Alex | The decisions already in effect in `docs/adr/`, each naming the code it governs |
-| `/lynncraft:tech-plan` | Alex | The smallest reversible plan, impact rated none / minor / major, a decision record when major |
+| `/lynncraft:tech-plan` | Alex | The smallest reversible plan for a work item or issue, impact rated none / minor / major, a decision record when major |
 | `/lynncraft:pr-check` | Both | Spec drift and architecture checks on your branch before you open a PR |
 | `/lynncraft:refresh-docs` | Both | The feature map, specs and architecture docs brought up to date in one unattended pass |
 | `/lynncraft:setup-github` | — | A GitHub workflow: the checks and QA on every pull request, and the docs refreshed after each merge |
