@@ -68,7 +68,7 @@ You don't need to remember any commands. When you want something built or fixed,
 | `/lynncraft:tech-plan` | Alex | The smallest reversible plan for a work item or issue: spec first, the build steps, the engineer's checks (lint, typecheck, unit tests) as tasks, then verify. Impact rated none / minor / major, a decision record when major |
 | `/lynncraft:verify` | Priya | The same verification GitHub runs on every pull request: specs still match the code, every test linked to a criterion or journey passes. Links tests and offers to write missing ones |
 | `/lynncraft:refresh-docs` | Both | The feature map, specs and architecture docs brought up to date in one pass, for a project that's new to LynnCraft |
-| `/lynncraft:setup-github` | — | Verification on every pull request, which blocks the merge until it passes. Claude offers it the first time |
+| `/lynncraft:setup` | — | Once per project: verification on every pull request, which blocks the merge until it passes. Claude offers it the first time; run it again after a LynnCraft update |
 
 In Codex, skills start with `$` instead of `/lynncraft:`, for example `$feature-map`. Either way, you don't have to type them: just ask for what you want.
 
@@ -76,7 +76,7 @@ In Codex, skills start with `$` instead of `/lynncraft:`, for example `$feature-
 
 - **Docs match the code.** A script checks every spec against your code. Only it can mark a spec "complete".
 - **Tests are run, not assumed.** Each feature and journey shows whether its tests pass. Change the code, and it's marked "needs re-verify".
-- **On every pull request.** GitHub verifies the change automatically, whatever tool wrote it, and the merge waits until specs, code and tests agree.
+- **On every pull request.** After a one-time setup per project (Claude offers it), GitHub verifies each change automatically, whatever tool wrote it, and the merge waits until specs, code and tests agree.
 
 Want an early look? Ask "verify this branch".
 
@@ -93,7 +93,7 @@ The checks are one script, `scripts/agentforge.mjs` (Node 18+ and git, no depend
 
 **Browser tests.** Playwright tests linked to criteria or journeys run only against localhost, so CI never signs in to your live site. Set the local server in `.agentforge/config.json`, using the variable your Playwright config reads: `{ "qa": { "browser": { "env": { "E2E_BASE_URL": "http://localhost:3000" } } } }`. Add `"allowRemote": true` to test a deployed site. Without Playwright's own Chromium, the installed Google Chrome is used.
 
-**Making the check required.** `setup-github` asks GitHub to require the `verify` check on your default branch, so a failing check blocks the merge. Some private repositories on GitHub's free plan can't require checks; there it still runs and comments on every pull request.
+**Making the check required.** `setup` asks GitHub to require the `verify` check on your default branch, so a failing check blocks the merge. Some private repositories on GitHub's free plan can't require checks; there it still runs and comments on every pull request.
 
 **The session-start note.** In Claude Code, LynnCraft tells Claude what's missing in the repository when a session starts. Turn it off with `{ "hooks": { "sessionStart": false } }` in `.agentforge/config.json`, or `AGENTFORGE_HOOKS=off`.
 
@@ -107,7 +107,7 @@ The checks are one script, `scripts/agentforge.mjs` (Node 18+ and git, no depend
 - `.agentforge/architecture-map.json`, `.agentforge/workflows.json` and the pages they produce in `docs/architecture/`.
 - `docs/architecture/README.md`: the architecture overview.
 - `docs/adr/NNNN-*.md`: decision records, with `paths:` naming the code each one governs.
-- `.github/workflows/agentforge.yml` and `.agentforge/bin/`: the pull request verification, added by `setup-github`.
+- `.github/workflows/agentforge.yml` and `.agentforge/bin/`: the pull request verification, added by `setup`.
 
 ## LynnCraft and AgentForge
 

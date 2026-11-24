@@ -554,7 +554,7 @@ export function installCi(root) {
     if (version) break
     try { version = JSON.parse(readFileSync(join(source, manifest), 'utf8')).version || '' } catch {}
   }
-  writeFileSync(join(target, 'package.json'), `${JSON.stringify({ private: true, type: 'module', description: `LynnCraft's checks for CI, copied from the plugin${version ? ` (${version})` : ''}. Run the setup-github skill again to update them; don't edit by hand.` }, null, 2)}\n`)
+  writeFileSync(join(target, 'package.json'), `${JSON.stringify({ private: true, type: 'module', description: `LynnCraft's checks for CI, copied from the plugin${version ? ` (${version})` : ''}. Run the setup skill again to update them; don't edit by hand.` }, null, 2)}\n`)
   return { path: CI_BIN, version, files: files.length }
 }
 
@@ -882,7 +882,7 @@ export function sessionStartContext(root) {
     lines.push(`LynnCraft: the feature map lists ${live.length} features${open ? `; ${open} ${open === 1 ? "has" : "have"} no complete spec (the lynncraft:feature-spec skill writes them)` : ', all with complete specs'}.`)
     if (!existsSync(join(root, BASELINE_PATH))) lines.push('There is no product baseline yet; the lynncraft:product-baseline skill writes the users, the journeys across features, and how a PRD lines up with the code.')
   }
-  if (!existsSync(join(root, '.github/workflows/agentforge.yml'))) lines.push('LynnCraft is not set up on GitHub here yet: the lynncraft:setup-github skill adds the verify check to every pull request, so a merge waits until specs, code and tests agree. Offer to set it up once, the first time the user works on code here.')
+  if (!existsSync(join(root, '.github/workflows/agentforge.yml'))) lines.push('LynnCraft is not set up on GitHub here yet: the lynncraft:setup skill adds the verify check to every pull request, so a merge waits until specs, code and tests agree. Offer to set it up once, the first time the user works on code here.')
   return lines.join(' ')
 }
 

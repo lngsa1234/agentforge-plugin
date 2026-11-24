@@ -1,4 +1,4 @@
-# LynnCraft: verifies every pull request. Added by the lynncraft:setup-github skill.
+# LynnCraft: verifies every pull request. Added by the lynncraft:setup skill.
 #
 #   verify — on each pull request: compares the branch with its base and runs every test
 #            linked to an acceptance criterion or a journey. It fails, and with the
@@ -8,7 +8,7 @@
 #            no cost. Nothing runs after a merge: the docs and tests change in the pull
 #            request, together with the code.
 #
-# The check runs from .agentforge/bin/, a copy of the plugin's scripts the setup-github
+# The check runs from .agentforge/bin/, a copy of the plugin's scripts the setup
 # skill commits alongside this file (run the skill again to update it).
 name: LynnCraft
 

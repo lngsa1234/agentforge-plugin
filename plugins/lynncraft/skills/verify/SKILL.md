@@ -72,4 +72,4 @@ For what's still untested, say which kind of test would cover each one and offer
 
 ## 5. Report
 
-Lead with the verdict: ready to merge, or what must be fixed. Then what you changed, and what's left for the user. If GitHub isn't set up to verify pull requests yet (no `.github/workflows/agentforge.yml`), offer the `setup-github` skill once.
+Lead with the verdict: ready to merge, or what must be fixed. Then what you changed, and what's left for the user. If GitHub isn't set up to verify pull requests yet (no `.github/workflows/agentforge.yml`), offer the `setup` skill once.

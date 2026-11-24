@@ -1,9 +1,9 @@
 ---
-name: setup-github
-description: Set up LynnCraft on GitHub for this repository — one workflow that verifies every pull request (specs still match the code, every linked test passes) and blocks the merge until they agree. Free, no model, no secret. Use when the user wants LynnCraft on GitHub or on every PR, and offer it once the first time the user works on code in a repository that doesn't have it.
+name: setup
+description: Set up LynnCraft for this repository, once — the GitHub check that verifies every pull request (specs still match the code, every linked test passes) and blocks the merge until they agree. Free, no model, no secret. Use when the user wants to set up LynnCraft or have it check pull requests, after a LynnCraft update to refresh the repository's copy of the checks, and offer it once the first time the user works on code in a repository that doesn't have it.
 ---
 
-# Set up LynnCraft on GitHub
+# Set up LynnCraft for this repository
 
 One workflow file and a copy of LynnCraft's checks. On every pull request, GitHub runs the same verification as the `verify` skill and comments with the result. Nothing runs after a merge: specs, code and tests change together in the pull request. No model, no secret, no cost.
 

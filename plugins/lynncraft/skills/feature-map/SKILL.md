@@ -66,4 +66,4 @@ LynnCraft's checks are one script in the plugin's `scripts/` folder, two folders
 - Do not write spec status yourself. Only `${CLAUDE_PLUGIN_ROOT}/scripts/agentforge.mjs check-specs` sets it.
 - After writing the map, run `node "${CLAUDE_PLUGIN_ROOT}/scripts/agentforge.mjs" check-specs`. It refuses a map with a missing, malformed or duplicated id; fix the map and run it again.
 - Commit `.agentforge/feature-map.json` with the code: it is the team's shared record.
-- If GitHub doesn't verify pull requests here yet (no `.github/workflows/agentforge.yml`), offer the `setup-github` skill once, at the end.
+- If GitHub doesn't verify pull requests here yet (no `.github/workflows/agentforge.yml`), offer the `setup` skill once, at the end.
