@@ -1,6 +1,6 @@
 # LynnCraft
 
-*Built by Lynn, a solo builder, for solo builders.*
+*Built by Lynn, a product and systems engineer for 10+ years, for any builders.*
 
 You build fast with AI. LynnCraft keeps your vibe coding high quality, and lets your AI do more on its own.
 

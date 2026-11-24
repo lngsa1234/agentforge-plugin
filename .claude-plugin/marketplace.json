@@ -4,7 +4,7 @@
     "name": "Ling",
     "url": "https://github.com/lngsa1234"
   },
-  "description": "LynnCraft: an AI product manager, technical lead and QA engineer for your repository, on your own Claude subscription. By Lynn, a solo builder, for solo builders.",
+  "description": "LynnCraft: an AI product manager, technical lead and QA engineer for your repository, on your own Claude or ChatGPT plan. Built by Lynn, a product and systems engineer for 10+ years, for any builders.",
   "plugins": [
     {
       "name": "lynncraft",
