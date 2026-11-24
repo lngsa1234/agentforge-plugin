@@ -53,15 +53,6 @@ Open your project and just ask, in plain words:
 
 You don't need to remember any commands. When you want something built or fixed, say **"make a work item: …"** and Maya writes it up as a GitHub issue, ready for Alex to plan.
 
-<details>
-<summary>Good to know (a bit more technical)</summary>
-
-- **Claude chat:** with GitHub connected, Claude opens your repository, writes the docs and pushes them, just as in Claude Code. The automatic checks (one before you push, one note when a session starts) run only in Claude Code.
-- **Codex:** you can also call a skill by name with `$`, for example `$feature-spec`. The automatic checks don't run in Codex, so ask for `$pr-check` before you push.
-- **GitHub workflow:** `/lynncraft:setup-github` adds checks and QA to every pull request. Refreshing the docs after each merge uses a Claude subscription; the checks and QA work without one.
-
-</details>
-
 ## What it does
 
 | Skill | Role | What you get |
@@ -80,30 +71,34 @@ You don't need to remember any commands. When you want something built or fixed,
 | `/lynncraft:refresh-docs` | Both | The feature map, specs and architecture docs brought up to date in one unattended pass |
 | `/lynncraft:setup-github` | — | A GitHub workflow: the checks and QA on every pull request, and the docs refreshed after each merge |
 
-Commands are shown as in Claude Code; in Codex, use `$<skill>` (for example `$feature-map`). You don't have to type them. Claude and Codex pick them up when you ask for what they do: "what features does this app have?", "spec the checkout feature", "are the goals criteria tested?", "is this branch OK to PR?".
+In Codex, skills start with `$` instead of `/lynncraft:`, for example `$feature-map`. Either way, you don't have to type them: just ask for what you want.
 
-## It runs without you asking
+## How it keeps your docs honest
 
-In Claude Code:
+- **Code checks the AI's work.** Maya and Alex write the docs, but a small script that comes with the plugin checks them. It confirms that every quote in a spec really is in your code, runs the tests linked to each acceptance criterion, and checks that every file in the architecture diagrams exists. Only the script can mark a spec "complete" or a feature "tested". If you change a feature's code later, it's marked "needs re-verify".
+- **Before you push.** When Claude is about to push your code or open a pull request, LynnCraft checks your changes first and shows you anything it finds. Say "go ahead" and it pushes. It never stops the same change twice.
+- **When you open a project.** If the feature map or specs are missing, Claude offers to create them.
+- **On GitHub (optional).** Ask Claude to "set up LynnCraft on GitHub". Every pull request then gets a comment with the checks and a test run (free, no AI involved), and after each merge Claude updates the docs on your own Claude subscription.
 
-- **Before every push or PR.** When Claude is about to run `git push` or `gh pr create`, the plugin runs the PR check first. If it finds something, Claude shows you the findings before anything leaves your machine. Say go ahead and it pushes; the same commit is never stopped twice.
-- **At the start of a session.** If the repository has no feature map, or specs are missing, Claude knows and offers to fix it.
-- **On GitHub.** `/lynncraft:setup-github` adds a workflow: every pull request gets a comment with the checks and a QA run (free, no model), and after each merge Claude Code refreshes the docs on your own Claude subscription.
+The checks before a push and at the start of a session run automatically in Claude Code. In Claude chat and Codex, ask "is this branch OK to PR?" before you push.
 
-Browser (Playwright) tests linked to criteria run only against localhost, so check-qa never signs in to your live site from CI. Point them at a local server with `{ "qa": { "browser": { "env": { "E2E_BASE_URL": "http://localhost:3000" } } } }` in `.agentforge/config.json` (use the variable your Playwright config reads), or opt in to a deployed site with `"allowRemote": true`. Without Playwright's own Chromium, check-qa uses the installed Google Chrome.
+<details>
+<summary>For developers: the checks and settings</summary>
 
-To turn the local hooks off, add `.agentforge/config.json` with `{ "hooks": { "prePush": false, "sessionStart": false } }`, or set `AGENTFORGE_HOOKS=off`.
+The bundled script is `scripts/agentforge.mjs` (Node 18+ and git, no dependencies):
 
-## Code checks the work
+- `check-specs`: each acceptance criterion's quote against the file it cites; fixes line numbers that moved; the only thing that marks a spec complete.
+- `check-qa`: runs each criterion's tests and sets the feature's QA status; records the commit and a fingerprint of the feature's code, so later changes read as "needs re-verify".
+- `check-baseline`: every journey runs through real features, and every PRD requirement cites the feature that builds it.
+- `check-architecture`: every file the C4 map cites exists, and each feature has exactly one component holding only its own code.
+- `check-workflows`: every workflow step's code exists.
+- `pr-check`: compares your branch with its base (the check before a push).
 
-The model writes; a bundled script decides (`scripts/agentforge.mjs`, Node 18+ and git, no dependencies):
+**Browser tests.** Playwright tests linked to criteria run only against localhost, so CI never signs in to your live site. Set the local server in `.agentforge/config.json`, using the variable your Playwright config reads: `{ "qa": { "browser": { "env": { "E2E_BASE_URL": "http://localhost:3000" } } } }`. Add `"allowRemote": true` to test a deployed site. Without Playwright's own Chromium, the installed Google Chrome is used.
 
-- `check-specs` checks every acceptance criterion's quote against the file it cites, moves a citation to the line where its quote really is, and alone marks a spec complete.
-- `check-qa` runs the tests each acceptance criterion names and sets each feature's QA from the results: complete only when every criterion's tests pass. It records the commit and a fingerprint of the feature's code, so a later change reads as "needs re-verify".
-- `check-baseline` checks that every journey runs through real features and every PRD requirement cites the feature that builds it.
-- `check-architecture` checks the C4 map: every cited file exists, the component view zooms into the container where the agent runs, and each feature has exactly one component holding only its own code.
-- `check-workflows` checks every workflow step's code.
-- `pr-check` compares your branch with its base.
+**Turning the automatic checks off.** Put `{ "hooks": { "prePush": false, "sessionStart": false } }` in `.agentforge/config.json`, or set `AGENTFORGE_HOOKS=off`.
+
+</details>
 
 ## Files it keeps in your repository
 
