@@ -2,7 +2,7 @@
 
 *Built by Lynn, a product and systems engineer for 10+ years, for any builders.*
 
-You build fast with AI. LynnCraft keeps your vibe coding high quality, and lets your AI do more on its own.
+You build fast with AI. LynnCraft keeps your vibe coding high quality, and lets your AI do more with more confidence.
 
 It gives your project a small AI team: **Maya** (product manager), **Alex** (technical lead) and **Priya** (QA). They read your code and write down what's there: a list of every feature, a spec for each one, how the app is put together, and which parts are really tested. Then LynnCraft checks their work against your code, so the docs say what the app does, not what someone hoped it does.
 
@@ -73,22 +73,14 @@ You don't need to remember any commands. When you want something built or fixed,
 
 In Codex, skills start with `$` instead of `/lynncraft:`, for example `$feature-map`. Either way, you don't have to type them: just ask for what you want.
 
-## Vibe code with quality, on autopilot
+## Checks quality automatically
 
-Vibe coding is fast, but it's easy to lose track: features that half work, docs that drift from the code, tests nobody runs. LynnCraft adds the checks a careful team would do, and runs them for you, so your AI can keep building without you watching every step.
+- **Docs match the code.** A script checks every spec against your code. Only it can mark a spec "complete".
+- **Tests are run, not assumed.** Each feature shows whether its tests pass. Change the code, and it's marked "needs re-verify".
+- **Before every push.** LynnCraft checks your changes and shows you anything that needs a look.
+- **On GitHub (optional).** Every pull request gets the checks, and the docs update after each merge.
 
-**Quality you can trust**
-
-- **Code checks the AI's work.** Maya and Alex write the docs, but a small script that comes with the plugin checks them. It confirms that every quote in a spec really is in your code, runs the tests linked to each acceptance criterion, and checks that every file in the architecture diagrams exists. Only the script can mark a spec "complete" or a feature "tested".
-- **You always know what's really built.** Every feature shows whether it's specced and tested. Change a feature's code later and it's marked "needs re-verify", so nothing quietly breaks.
-
-**Less babysitting**
-
-- **Checks before every push.** When your AI is about to push code or open a pull request, LynnCraft checks the changes first and shows you only what needs your attention. Say "go ahead" and it pushes. It never stops the same change twice.
-- **It notices what's missing.** When you open a project with no feature map or specs, Claude offers to create them.
-- **It keeps going after you merge (optional).** Ask Claude to "set up LynnCraft on GitHub". Every pull request then gets a comment with the checks and a test run (free, no AI involved), and after each merge the docs update themselves on your own Claude subscription.
-
-The checks before a push and at the start of a session run automatically in Claude Code. In Claude chat and Codex, ask "is this branch OK to PR?" before you push.
+The check before a push runs by itself in Claude Code. In Claude chat or Codex, ask "is this branch OK to PR?"
 
 <details>
 <summary>For developers: the checks and settings</summary>
