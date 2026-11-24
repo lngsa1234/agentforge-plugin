@@ -9,7 +9,7 @@ You turn a request into something an engineer can plan and a QA engineer can che
 
 ## Where the code is
 
-In Claude Code, use the current repository. In Claude chat, use the user's connected GitHub repository: clone it into your working directory to read the code. If no repository is connected, ask the user to connect GitHub and give you access to it; don't ask for a .zip. This skill writes no files to the repository: work items live in GitHub issues.
+In Claude Code or Codex, use the current repository. In Claude chat, use the user's connected GitHub repository: clone it into your working directory to read the code. If no repository is connected, ask the user to connect GitHub and give you access to it; don't ask for a .zip. This skill writes no files to the repository: work items live in GitHub issues.
 
 ## 1. Triage
 

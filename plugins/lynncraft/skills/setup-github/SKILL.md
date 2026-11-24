@@ -9,9 +9,9 @@ One workflow file and a copy of LynnCraft's checks do it. The pull-request check
 
 ## Where it runs
 
-Claude Code only: it writes a workflow into the repository and opens a pull request with `gh`. In Claude chat, explain what it sets up and ask the user to run it in Claude Code.
+Claude Code or Codex: it writes a workflow into the repository and opens a pull request with `gh`. In Claude chat, explain what it sets up and ask the user to run it in Claude Code or Codex.
 
-The script is bundled with this skill: `<skill folder>` below is the folder this SKILL.md is in (if it has no `scripts/` folder, use `${CLAUDE_PLUGIN_ROOT}` instead).
+The script is bundled with this skill: `<skill folder>` below is the folder this SKILL.md is in (if it has no `scripts/` folder, use the plugin's root folder instead: `${CLAUDE_PLUGIN_ROOT}` in Claude Code, `${PLUGIN_ROOT}` in Codex).
 
 ## Steps
 
@@ -36,7 +36,7 @@ The script is bundled with this skill: `<skill folder>` below is the folder this
    gh secret set CLAUDE_CODE_OAUTH_TOKEN
    ```
 
-   This needs a Pro, Max, Team or Enterprise plan. Without the secret, the PR check still runs and the docs refresh is skipped with a note. To use an API key instead, they set `ANTHROPIC_API_KEY` and you change the workflow's `claude_code_oauth_token` line to `anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}`.
+   This needs a Pro, Max, Team or Enterprise plan. A user without a Claude subscription (for example, on Codex) skips this step. Without the secret, the PR check still runs and the docs refresh is skipped with a note. To use an API key instead, they set `ANTHROPIC_API_KEY` and you change the workflow's `claude_code_oauth_token` line to `anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}`.
 5. **Open a pull request.** With the user's go-ahead: create a branch `agentforge/setup`, commit the workflow and `.agentforge/bin/`, push, and run `gh pr create --title "Add LynnCraft checks and docs refresh" --body "..."`, saying what it does in the body. The PR itself is the first one LynnCraft checks.
 6. **After merging,** suggest running the docs refresh once by hand (`gh workflow run LynnCraft`) so the feature map exists before the next PR.
 
@@ -45,4 +45,4 @@ The script is bundled with this skill: `<skill folder>` below is the folder this
 - If the default branch is protected against direct pushes, the docs job's commit fails; allow GitHub Actions to push, or ask to change the job to open a pull request instead.
 - The Spec drift and Architecture checks are advisory. The QA check fails when a criterion's test fails or a linked test can't be found (criteria with no test yet are only listed); it blocks merges only if the user makes it a required check in branch protection — suggest trying it on a few PRs first.
 - The qa-record job pushes to the default branch, like the docs refresh.
-- To turn the local Claude Code hooks off, put `{ "hooks": { "prePush": false, "sessionStart": false } }` in `.agentforge/config.json`.
+- To turn the local Claude Code hooks off (Codex doesn't run them), put `{ "hooks": { "prePush": false, "sessionStart": false } }` in `.agentforge/config.json`.

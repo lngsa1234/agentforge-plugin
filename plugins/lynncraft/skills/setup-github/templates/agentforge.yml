@@ -26,7 +26,7 @@ on:
 
 env:
   # Where the LynnCraft plugin and its marketplace live (used by the docs refresh).
-  AGENTFORGE_REPO: https://github.com/lngsa1234/agentforge-plugin.git
+  AGENTFORGE_REPO: https://github.com/lngsa1234/lynncraft-plugin.git
   # LynnCraft's checks, copied into this repository.
   AGENTFORGE: .agentforge/bin/agentforge.mjs
 

@@ -7,7 +7,7 @@ description: Turn an approved requirement into the smallest reversible, code-gro
 
 ## Where the code is
 
-In Claude Code, use the current repository. In Claude chat, use the user's connected GitHub repository: clone it into your working directory, and commit the files you wrote and push them (on a new branch with a pull request, unless the user asks you to push to the default branch). If no repository is connected, ask the user to connect GitHub and give you access to it; don't ask for a .zip.
+In Claude Code or Codex, use the current repository. In Claude chat, use the user's connected GitHub repository: clone it into your working directory, and commit the files you wrote and push them (on a new branch with a pull request, unless the user asks you to push to the default branch). If no repository is connected, ask the user to connect GitHub and give you access to it; don't ask for a .zip.
 
 ## 1. Review the requirement first
 

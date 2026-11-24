@@ -4,20 +4,28 @@
 
 An AI product manager (Maya), technical lead (Alex) and QA engineer (Priya) for your repository. They read your code and write the docs your team keeps meaning to write: a feature map, feature specs, user journeys, C4 diagrams, workflows and decision records. Then code checks them: every acceptance criterion's quote is verified against the file it cites, and the tests linked to each criterion are run.
 
-It runs on your own Claude subscription. No server, no API key, no account.
+It runs in Claude Code, Claude chat or Codex, on your own subscription. No server, no API key, no account.
 
 ## Install
 
 **Claude Code** (terminal, desktop app or IDE):
 
 ```text
-/plugin marketplace add lngsa1234/agentforge-plugin
+/plugin marketplace add lngsa1234/lynncraft-plugin
 /plugin install lynncraft@lynncraft
 ```
 
 Then restart Claude Code, or run `/reload-plugins`.
 
-**Claude on the web, desktop or mobile:** on claude.ai or in the desktop app, open **Customize → Plugins**, select **Add marketplace**, enter `lngsa1234/agentforge-plugin`, and install **LynnCraft**. The plugin is saved to your account, so its skills also work in chat on your phone and in Claude Code with the same account. Code execution must be on. Connect GitHub and give Claude access to your repository: it reads the code, writes the docs and pushes them, just as in Claude Code. The automatic hooks (the check before a push and the note at the start of a session) run in Claude Code.
+**Claude on the web, desktop or mobile:** on claude.ai or in the desktop app, open **Customize → Plugins**, select **Add marketplace**, enter `lngsa1234/lynncraft-plugin`, and install **LynnCraft**. The plugin is saved to your account, so its skills also work in chat on your phone and in Claude Code with the same account. Code execution must be on. Connect GitHub and give Claude access to your repository: it reads the code, writes the docs and pushes them, just as in Claude Code. The automatic hooks (the check before a push and the note at the start of a session) run in Claude Code.
+
+**Codex** (CLI, IDE extension or app):
+
+```text
+codex plugin marketplace add lngsa1234/lynncraft-plugin
+```
+
+Then open `/plugins` in the CLI (or **Plugins** in the Codex app), choose the LynnCraft marketplace and install **LynnCraft**. Use a skill by asking for what it does ("spec the checkout feature"), or mention it with `$`, for example `$feature-spec`. The automatic hooks (the check before a push and the note at the start of a session) are Claude Code only; in Codex, run `$pr-check` before you push. The GitHub docs refresh runs Claude Code, so it needs a Claude subscription; the pull-request checks and QA work without one.
 
 ## What it does
 
@@ -37,7 +45,7 @@ Then restart Claude Code, or run `/reload-plugins`.
 | `/lynncraft:refresh-docs` | Both | The feature map, specs and architecture docs brought up to date in one unattended pass |
 | `/lynncraft:setup-github` | — | A GitHub workflow: the checks and QA on every pull request, and the docs refreshed after each merge |
 
-You don't have to name the skills. Claude picks them up when you ask for what they do: "what features does this app have?", "spec the checkout feature", "are the goals criteria tested?", "is this branch OK to PR?".
+Commands are shown as in Claude Code; in Codex, use `$<skill>` (for example `$feature-map`). You don't have to name the skills. Claude and Codex pick them up when you ask for what they do: "what features does this app have?", "spec the checkout feature", "are the goals criteria tested?", "is this branch OK to PR?".
 
 ## It runs without you asking
 

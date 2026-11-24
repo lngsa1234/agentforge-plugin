@@ -8,7 +8,7 @@ allowed-tools: Read, Glob, Grep, Write, Edit, Bash(git log *), Bash(git diff *),
 
 This runs unattended, usually in GitHub Actions right after a merge. Do the whole pass without asking questions; put anything you could not confirm in the documents' limitations, not in a question. Do not commit or push: the workflow does that.
 
-The script is bundled with this skill: `<skill folder>` below is the folder this SKILL.md is in (if it has no `scripts/` folder, use `${CLAUDE_PLUGIN_ROOT}` instead).
+The script is bundled with this skill: `<skill folder>` below is the folder this SKILL.md is in (if it has no `scripts/` folder, use the plugin's root folder instead: `${CLAUDE_PLUGIN_ROOT}` in Claude Code, `${PLUGIN_ROOT}` in Codex).
 
 1. **What changed.** Run `git log --oneline -30` and, when `.agentforge/feature-map.json` exists, `git log -1 --format=%H -- .agentforge/feature-map.json` and `git diff --stat <that commit>..HEAD` to see what changed since the docs were last refreshed. Focus on those paths; don't re-read the whole repository when little changed.
 2. **Feature map.** Follow the `feature-map` skill: add features for new code, update anchors for moved code, mark features whose code is gone as `removed` (including `deprecated` ones whose code has now been deleted). Never mark a feature `deprecated` unattended: only the user knows a feature is out of use. Keep every existing `id`.

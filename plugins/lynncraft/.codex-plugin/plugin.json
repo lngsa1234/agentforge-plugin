@@ -1,0 +1,33 @@
+{
+  "name": "lynncraft",
+  "version": "0.12.0",
+  "description": "An AI product manager, technical lead and QA engineer for your repo: a feature map and specs written from the code with every citation verified, acceptance criteria linked to tests that are run, an architecture overview with C4 diagrams, workflows and decision records, and spec-drift and architecture checks before you open a PR.",
+  "author": {
+    "name": "Ling",
+    "url": "https://github.com/lngsa1234"
+  },
+  "repository": "https://github.com/lngsa1234/lynncraft-plugin",
+  "license": "MIT",
+  "keywords": [
+    "adr",
+    "architecture",
+    "c4",
+    "feature-map",
+    "product-management",
+    "pull-requests",
+    "qa",
+    "specs",
+    "user-journeys"
+  ],
+  "extensions": {
+    "com.openai": {
+      "hooks": [],
+      "interface": {
+        "displayName": "LynnCraft",
+        "shortDescription": "Feature map, specs, architecture and QA written from your code, with every citation checked.",
+        "developerName": "Lynn",
+        "category": "Coding"
+      }
+    }
+  }
+}

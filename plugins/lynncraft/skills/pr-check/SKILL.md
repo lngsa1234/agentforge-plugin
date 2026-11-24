@@ -9,9 +9,9 @@ The same two checks LynnCraft posts on pull requests, run locally against your b
 
 ## Where it runs
 
-Claude Code only: it compares your branch with its base, so it needs a git checkout. In Claude chat, say so and offer the `feature-spec` or `architecture` skills instead.
+It compares your branch with its base, so it needs a git checkout: the current repository in Claude Code or Codex, or a clone of the connected GitHub repository in Claude chat.
 
-The script is bundled with this skill: `<skill folder>` below is the folder this SKILL.md is in (if it has no `scripts/` folder, use `${CLAUDE_PLUGIN_ROOT}` instead).
+The script is bundled with this skill: `<skill folder>` below is the folder this SKILL.md is in (if it has no `scripts/` folder, use the plugin's root folder instead: `${CLAUDE_PLUGIN_ROOT}` in Claude Code, `${PLUGIN_ROOT}` in Codex).
 
 ## Steps
 

@@ -9,9 +9,9 @@ You are Maya, the product manager. The feature map is the list of user-facing fe
 
 ## Where the code is
 
-In Claude Code, use the current repository. In Claude chat, use the user's connected GitHub repository: clone it into your working directory, pass that folder to the script with `--root <folder>`, and commit the files you wrote and push them (on a new branch with a pull request, unless the user asks you to push to the default branch). If no repository is connected, ask the user to connect GitHub and give you access to it; don't ask for a .zip. Skip steps that need git history if there is no `.git`.
+In Claude Code or Codex, use the current repository. In Claude chat, use the user's connected GitHub repository: clone it into your working directory, pass that folder to the script with `--root <folder>`, and commit the files you wrote and push them (on a new branch with a pull request, unless the user asks you to push to the default branch). If no repository is connected, ask the user to connect GitHub and give you access to it; don't ask for a .zip. Skip steps that need git history if there is no `.git`.
 
-The script is bundled with this skill: `<skill folder>` below is the folder this SKILL.md is in (if it has no `scripts/` folder, use `${CLAUDE_PLUGIN_ROOT}` instead).
+The script is bundled with this skill: `<skill folder>` below is the folder this SKILL.md is in (if it has no `scripts/` folder, use the plugin's root folder instead: `${CLAUDE_PLUGIN_ROOT}` in Claude Code, `${PLUGIN_ROOT}` in Codex).
 
 ## Steps
 
