@@ -76,6 +76,7 @@ In Codex, skills start with `$` instead of `/lynncraft:`, for example `$feature-
 
 - **Docs match the code.** A script checks every spec against your code. Only it can mark a spec "complete".
 - **Tests are run, not assumed.** Each feature and journey shows whether its tests pass. Change the code, and it's marked "needs re-verify".
+- **Before every push and merge.** Claude runs `verify` first and won't push, open a pull request or merge while something must be fixed. This works in private repositories too, with no GitHub setup.
 - **On every pull request.** After a one-time setup per project (Claude offers it), GitHub verifies each change automatically, whatever tool wrote it, and the merge waits until specs, code and tests agree.
 
 Want an early look? Ask "verify this branch".
@@ -93,7 +94,9 @@ The checks are one script, `scripts/agentforge.mjs` (Node 18+ and git, no depend
 
 **Browser tests.** Playwright tests linked to criteria or journeys run only against localhost, so CI never signs in to your live site. Set the local server in `.agentforge/config.json`, using the variable your Playwright config reads: `{ "qa": { "browser": { "env": { "E2E_BASE_URL": "http://localhost:3000" } } } }`. Add `"allowRemote": true` to test a deployed site. Without Playwright's own Chromium, the installed Google Chrome is used.
 
-**Making the check required.** `setup` asks GitHub to require the `verify` check on your default branch, so a failing check blocks the merge. Some private repositories on GitHub's free plan can't require checks; there it still runs and comments on every pull request.
+**Verify before push.** In Claude Code, a hook runs `verify` before `git push`, `gh pr create` and pull-request merges, and blocks them on *Must fix*. It runs once per commit and skips docs-only pushes. Turn it off with `{ "hooks": { "verifyBeforePush": false } }` in `.agentforge/config.json`. In Codex and Claude Projects, the skills run it themselves.
+
+**Making the check required.** `setup` asks GitHub to require the `verify` check on your default branch, so a failing check blocks the merge. Some private repositories on GitHub's free plan can't require checks; there it still runs and comments on every pull request, and the verify-before-push gate is what stops a failing change.
 
 **The session-start note.** In Claude Code, LynnCraft tells Claude what's missing in the repository when a session starts. Turn it off with `{ "hooks": { "sessionStart": false } }` in `.agentforge/config.json`, or `AGENTFORGE_HOOKS=off`.
 

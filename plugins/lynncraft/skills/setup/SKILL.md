@@ -9,7 +9,7 @@ One workflow file and a copy of LynnCraft's checks. On every pull request, GitHu
 
 ## Where it runs
 
-Work in a checkout of the user's repository: the current repository in Claude Code or Codex, or the repository cloned into the workspace of a Claude Project connected to GitHub. Commit what you write and push it on a branch with a pull request, unless the user asks you to push to the default branch. If you can't run commands here or there's no checkout (a plain chat), say that LynnCraft works in Claude Code, Codex, or a Claude Project connected to GitHub, and stop. If the repository isn't on GitHub, say so.
+Work in a checkout of the user's repository: the current repository in Claude Code or Codex, or the repository cloned into the workspace of a Claude Project connected to GitHub. Commit what you write and push it on a branch with a pull request, unless the user asks you to push to the default branch. **Verify before every push or merge:** run LynnCraft's `verify` (as the `verify` skill describes) and don't push, open a pull request or merge while it reports *Must fix*; fix it, or tell the user what blocks it. Pushes that change only `docs/`, `.agentforge/` or Markdown files are exempt. In Claude Code a hook enforces this; in Codex and Claude Projects, you do. If you can't run commands here or there's no checkout (a plain chat), say that LynnCraft works in Claude Code, Codex, or a Claude Project connected to GitHub, and stop. If the repository isn't on GitHub, say so.
 
 LynnCraft's checks are one script in the plugin's `scripts/` folder, two folders up from this SKILL.md. Run it as `${CLAUDE_PLUGIN_ROOT}/scripts/agentforge.mjs`; where that placeholder isn't filled in (Codex), use `../../scripts/agentforge.mjs` from this skill's folder.
 
@@ -33,7 +33,7 @@ LynnCraft's checks are one script in the plugin's `scripts/` folder, two folders
    JSON
    ```
 
-   If the branch already has protection rules, read them first (`gh api repos/{owner}/{repo}/branches/<default branch>/protection`) and add `verify` to the existing required checks instead of replacing them. If GitHub refuses (some private repositories on the free plan can't use branch protection, or the user isn't an admin), tell the user: the check still runs and comments on every pull request, it just can't block the merge by itself.
+   If the branch already has protection rules, read them first (`gh api repos/{owner}/{repo}/branches/<default branch>/protection`) and add `verify` to the existing required checks instead of replacing them. If GitHub refuses (some private repositories on the free plan can't use branch protection, or the user isn't an admin), tell the user: the check still runs and comments on every pull request, it just can't block a merge made on GitHub. Pushes and merges Claude makes are still blocked by verify-before-push.
 
 ## Notes for the user
 

@@ -6,7 +6,7 @@ allowed-tools: Read, Glob, Grep, Write, Edit, Bash(git log *), Bash(git diff *),
 
 # Refresh the LynnCraft docs (Maya and Alex)
 
-Use it to catch the docs up with the code in one go: when a project starts using LynnCraft, or when code reached the default branch without its docs. Day to day, specs change in each pull request, with the code, and verification on GitHub keeps them aligned. Do the whole pass without asking questions; put anything you could not confirm in the documents' limitations, not in a question. Do the work on a branch and open a pull request, so the refreshed docs are verified like any other change; don't push to the default branch unless the user asks.
+Use it to catch the docs up with the code in one go: when a project starts using LynnCraft, or when code reached the default branch without its docs. Day to day, specs change in each pull request, with the code, and verification before every push and on GitHub keeps them aligned. This pass changes only docs, so its push doesn't wait for `verify`; if you change code, run `verify` and fix any *Must fix* before pushing. Do the whole pass without asking questions; put anything you could not confirm in the documents' limitations, not in a question. Do the work on a branch and open a pull request, so the refreshed docs are verified like any other change; don't push to the default branch unless the user asks.
 
 LynnCraft's checks are one script in the plugin's `scripts/` folder, two folders up from this SKILL.md. Run it as `${CLAUDE_PLUGIN_ROOT}/scripts/agentforge.mjs`; where that placeholder isn't filled in (Codex), use `../../scripts/agentforge.mjs` from this skill's folder.
 

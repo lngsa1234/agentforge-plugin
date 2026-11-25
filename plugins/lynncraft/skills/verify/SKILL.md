@@ -9,7 +9,7 @@ The same verification GitHub runs on every pull request, run on the user's branc
 
 ## Where it runs
 
-Work in a checkout of the user's repository: the current repository in Claude Code or Codex, or the repository cloned into the workspace of a Claude Project connected to GitHub. Commit what you write and push it on a branch with a pull request, unless the user asks you to push to the default branch. If you can't run commands here or there's no checkout (a plain chat), say that LynnCraft works in Claude Code, Codex, or a Claude Project connected to GitHub, and stop.
+Work in a checkout of the user's repository: the current repository in Claude Code or Codex, or the repository cloned into the workspace of a Claude Project connected to GitHub. Commit what you write and push it on a branch with a pull request, unless the user asks you to push to the default branch. **Verify before every push or merge:** run LynnCraft's `verify` (as the `verify` skill describes) and don't push, open a pull request or merge while it reports *Must fix*; fix it, or tell the user what blocks it. Pushes that change only `docs/`, `.agentforge/` or Markdown files are exempt. In Claude Code a hook enforces this; in Codex and Claude Projects, you do. If you can't run commands here or there's no checkout (a plain chat), say that LynnCraft works in Claude Code, Codex, or a Claude Project connected to GitHub, and stop.
 
 LynnCraft's checks are one script in the plugin's `scripts/` folder, two folders up from this SKILL.md. Run it as `${CLAUDE_PLUGIN_ROOT}/scripts/agentforge.mjs`; where that placeholder isn't filled in (Codex), use `../../scripts/agentforge.mjs` from this skill's folder.
 
@@ -25,6 +25,8 @@ It compares the branch with its base and runs every linked test, then gives one 
 
 - **Must fix** (GitHub blocks the merge on these): an acceptance criterion the branch breaks (its cited code changed so it no longer holds) while its spec didn't change with it; a linked test, for a criterion or a journey's test case, that fails or can't be found.
 - **Worth a look** (doesn't block): feature code changed while its spec didn't, features with no complete spec, new code no feature owns, architecture findings, criteria with no test yet, journey test cases not automated yet, and journeys with no test cases written.
+
+**It runs before every push and merge, too.** In Claude Code, a hook runs `verify` before `git push`, `gh pr create` and a pull-request merge, and blocks the command while there's a *Must fix*. It runs once per commit, skips pushes that only change docs, and can be turned off with `{ "hooks": { "verifyBeforePush": false } }` in `.agentforge/config.json`. In Codex and Claude Projects, every skill runs it before pushing. When a push is blocked, explain each item to the user as in step 2 and fix it; don't get around the block.
 
 It also records each feature's, journey's and test case's results in `.agentforge/feature-map.json` and `.agentforge/product-baseline.json`, with the commit and a fingerprint of the feature's code, so a later change reads as "needs re-verify". Commit those files with the branch: results go in with the code, never after the merge.
 

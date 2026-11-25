@@ -7,7 +7,7 @@ description: Turn an approved requirement into the smallest reversible, code-gro
 
 ## Where the code is
 
-Work in a checkout of the user's repository: the current repository in Claude Code or Codex, or the repository cloned into the workspace of a Claude Project connected to GitHub. Commit what you write and push it on a branch with a pull request, unless the user asks you to push to the default branch. If you can't run commands here or there's no checkout (a plain chat), say that LynnCraft works in Claude Code, Codex, or a Claude Project connected to GitHub, and stop.
+Work in a checkout of the user's repository: the current repository in Claude Code or Codex, or the repository cloned into the workspace of a Claude Project connected to GitHub. Commit what you write and push it on a branch with a pull request, unless the user asks you to push to the default branch. **Verify before every push or merge:** run LynnCraft's `verify` (as the `verify` skill describes) and don't push, open a pull request or merge while it reports *Must fix*; fix it, or tell the user what blocks it. Pushes that change only `docs/`, `.agentforge/` or Markdown files are exempt. In Claude Code a hook enforces this; in Codex and Claude Projects, you do. If you can't run commands here or there's no checkout (a plain chat), say that LynnCraft works in Claude Code, Codex, or a Claude Project connected to GitHub, and stop.
 
 ## 1. Review the requirement first
 
@@ -36,7 +36,7 @@ A **major** impact gets a decision record: write `docs/adr/NNNN-<slug>.md` in th
 - Data and API changes.
 - Tests to add or update: at least one per new or changed criterion, written with the code by whoever builds it, and an end-to-end test for any journey the change alters. Link each in the same branch.
 - **Engineer's checks, as tasks.** After the code steps, list the repository's own checks for whoever builds it to run and fix before pushing, with the exact commands from step 2: lint, typecheck, and the unit tests (the changed area first, then the whole suite). Use only commands the repository already has; if it has no linter or type checker, say so and don't add one unless the user agrees. These are the engineer's tasks, not a gate: a failure is fixed in the build, not reported for someone else.
-- **Done means verified.** The last step is always the `verify` skill on the branch: nothing under *Must fix*, and the new criteria's tests pass. GitHub runs the same verification on the pull request.
+- **Done means verified.** The last step is always the `verify` skill on the branch, before the push: nothing under *Must fix*, and the new criteria's tests pass. A push or merge with a *Must fix* is blocked, and GitHub runs the same verification on the pull request.
 - Risks with mitigations, and the rollback path.
 - Decisions for the user: only genuine judgment calls, each with options and your recommendation. Settle data, privacy, migration and CI questions here, not mid-build.
 

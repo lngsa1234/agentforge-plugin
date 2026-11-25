@@ -1,6 +1,6 @@
 {
   "name": "lynncraft",
-  "version": "0.14.0",
+  "version": "0.15.0",
   "description": "An AI product manager, technical lead and QA engineer for your repo: a feature map and specs written from the code with every citation verified, acceptance criteria and journeys linked to tests that are run, an architecture overview with C4 diagrams, workflows and decision records, and verification on every pull request that blocks the merge until specs, code and tests agree.",
   "author": {
     "name": "Ling",
