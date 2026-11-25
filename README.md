@@ -59,14 +59,14 @@ You don't need to remember any commands. When you want something built or fixed,
 |---|---|---|
 | `/lynncraft:feature-map` | Maya | `.agentforge/feature-map.json`: every user-facing feature the code implements, with anchors saying where it lives |
 | `/lynncraft:feature-spec` | Maya | `docs/specs/<feature>.md` written from the code; each acceptance criterion cites the lines it rests on, and the check verifies every quote |
-| `/lynncraft:product-baseline` | Maya | `docs/product/baseline.md`: who the product is for, the journeys across features, and, if you have a PRD in any format, what it asks for against what's built |
+| `/lynncraft:product-baseline` | Maya | `docs/product/baseline.md`: who the product is for, the journeys across features with the end-to-end test cases that prove each one, and, if you have a PRD in any format, what it asks for against what's built |
 | `/lynncraft:work-item` | Maya | A request turned into a typed work item (feature, bug or chore) with testable acceptance criteria, filed as a GitHub issue; questions only when it's unclear |
 | `/lynncraft:architecture` | Alex | `docs/architecture/README.md`: how the system is built and the rules the code must keep. Ask for "the architecture" and it runs the three below first |
 | `/lynncraft:architecture-map` | Alex | The C4 container and component diagrams in `docs/architecture/`, every path checked |
 | `/lynncraft:workflows` | Alex | The main runtime flows as sequence diagrams in `docs/architecture/workflows/`, every cited file checked |
 | `/lynncraft:decision-records` | Alex | The decisions already in effect in `docs/adr/`, each naming the code it governs |
 | `/lynncraft:tech-plan` | Alex | The smallest reversible plan for a work item or issue: spec first, the build steps, the engineer's checks (lint, typecheck, unit tests) as tasks, then verify. Impact rated none / minor / major, a decision record when major |
-| `/lynncraft:verify` | Priya | The same verification GitHub runs on every pull request: specs still match the code, every test linked to a criterion or journey passes. Links tests and offers to write missing ones |
+| `/lynncraft:verify` | Priya | The same verification GitHub runs on every pull request: specs still match the code, every test linked to a criterion or a journey's test case passes. Links tests and offers to write missing ones, including end-to-end tests from the journeys' test cases |
 | `/lynncraft:refresh-docs` | Both | The feature map, specs and architecture docs brought up to date in one pass, for a project that's new to LynnCraft |
 | `/lynncraft:setup` | — | Once per project: verification on every pull request, which blocks the merge until it passes. Claude offers it the first time; run it again after a LynnCraft update |
 
@@ -86,8 +86,8 @@ Want an early look? Ask "verify this branch".
 The checks are one script, `scripts/agentforge.mjs` (Node 18+ and git, no dependencies), which every skill runs. Its commands:
 
 - `check-specs`: each acceptance criterion's quote against the file it cites; fixes line numbers that moved; the only thing that marks a spec complete.
-- `verify`: what GitHub runs on every pull request. Compares the branch with its base and runs every test linked to a criterion or a journey; fails when a criterion the branch breaks isn't updated in its spec, or a linked test fails or is missing. Records the results with the commit and a fingerprint of each feature's code, so later changes read as "needs re-verify".
-- `check-baseline`: every journey runs through real features, and every PRD requirement cites the feature that builds it.
+- `verify`: what GitHub runs on every pull request. Compares the branch with its base and runs every test linked to a criterion or a journey's test case; fails when a criterion the branch breaks isn't updated in its spec, or a linked test fails or is missing. Records the results with the commit and a fingerprint of each feature's code, so later changes read as "needs re-verify".
+- `check-baseline`: every journey runs through real features and has a main-path end-to-end test case, every test case has steps and an expected result, and every PRD requirement cites the feature that builds it.
 - `check-architecture`: every file the C4 map cites exists, and each feature has exactly one component holding only its own code.
 - `check-workflows`: every workflow step's code exists.
 
@@ -102,7 +102,7 @@ The checks are one script, `scripts/agentforge.mjs` (Node 18+ and git, no depend
 ## Files it keeps in your repository
 
 - `.agentforge/feature-map.json`: the feature map, spec drafts and test results. Commit it.
-- `.agentforge/product-baseline.json` and `docs/product/baseline.md`: the product baseline, its journeys and their end-to-end tests.
+- `.agentforge/product-baseline.json` and `docs/product/baseline.md`: the product baseline, its journeys and their end-to-end test cases and results.
 - `docs/specs/`: feature specs, each with its scenarios.
 - `.agentforge/architecture-map.json`, `.agentforge/workflows.json` and the pages they produce in `docs/architecture/`.
 - `docs/architecture/README.md`: the architecture overview.

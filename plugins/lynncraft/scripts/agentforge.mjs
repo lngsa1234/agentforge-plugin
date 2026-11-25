@@ -262,6 +262,7 @@ function printBaseline(result) {
   console.log(`- ${result.journeys} journeys, covering ${coverage.onJourney} of ${coverage.features} features`)
   if (coverage.prdRequirements) console.log(`- PRD: ${coverage.prdBuilt} of ${coverage.prdRequirements} requirements built${coverage.notInPrd.length ? `; built but not in the PRD: ${coverage.notInPrd.join(', ')}` : ''}`)
   if (coverage.notOnJourney.length) console.log(`- Not on any journey: ${coverage.notOnJourney.join(', ')}`)
+  console.log(`- End-to-end test cases: ${coverage.testCases}, ${coverage.automated} automated${coverage.failuresUncovered.length ? `; failures with no test case in ${coverage.failuresUncovered.join(', ')}` : ''}`)
   if (result.problems.length) console.log(`\nTo fix:\n${result.problems.map(item => `- ${item}`).join('\n')}`)
   return 0
 }
@@ -425,15 +426,17 @@ function loadBaselineDocument(root) {
 export function checkQa(root, { runner: wanted = '', now = new Date().toISOString(), runFile = runTestFile, write = true, retries = 0, browserGate = runFile === runTestFile ? playwrightGate : () => ({ run: true, cleanup: () => {} }) } = {}) {
   const map = loadFeatureMap(root)
   if (!map) return { error: `No ${MAP_PATH} yet. Run the feature-map skill first.`, nothingToCheck: true }
-  // The product baseline's journeys can name end-to-end tests too (journey.tests).
+  // The product baseline's journeys name end-to-end tests too: on each test case
+  // (journey.testCases[].tests), or on the journey itself in older baselines (journey.tests).
   const baseline = loadBaselineDocument(root)
   const journeys = baseline ? normalizeBaseline(baseline.document).journeys : []
   // Retired (deprecated or removed) features keep their last QA result as history; their tests aren't run.
   const linked = [
     ...map.features.filter(feature => !isRetired(feature)).flatMap(feature => (feature.spec?.document?.acceptanceCriteria || []).flatMap(criterion => Array.isArray(criterion.tests) ? criterion.tests : [])),
-    ...journeys.flatMap(journey => journey.tests),
+    ...journeys.flatMap(journey => [...journey.tests, ...journey.testCases.flatMap(testCase => testCase.tests)]),
   ]
-  if (!linked.length) return { error: 'No acceptance criterion or journey names a test yet. Run the verify skill to link tests.', nothingToCheck: true, journeys: journeys.map(journey => ({ id: journey.id, title: journey.title, qa: 'untested', linked: false })) }
+  const unlinkedCases = (journey) => journey.testCases.map(testCase => ({ id: testCase.id, title: testCase.title, kind: testCase.kind, linked: false, qa: 'untested' }))
+  if (!linked.length) return { error: 'No acceptance criterion or journey test case names a test yet. Run the verify skill to link tests.', nothingToCheck: true, journeys: journeys.map(journey => ({ id: journey.id, title: journey.title, qa: 'untested', linked: false, cases: unlinkedCases(journey) })) }
   const runner = detectRunner(root, wanted)
   if (!runner) return { error: 'Could not tell which test runner this repository uses. Pass --runner node, jest or vitest.' }
   // Run each linked file once.
@@ -495,12 +498,25 @@ export function checkQa(root, { runner: wanted = '', now = new Date().toISOStrin
   if (write) writeFileSync(join(root, MAP_PATH), `${JSON.stringify(map, null, 2)}\n`)
   // Each journey's end-to-end tests, judged the same way as a criterion's.
   const outcome = test => notRun.has(String(test.path || '').replace(/^\.?\//, '')) ? 'not_run' : testOutcome(results[test.path], test.name)
-  const journeyReport = journeys.map(journey => ({ id: journey.id, title: journey.title, linked: journey.tests.length > 0, qa: journey.tests.length ? criterionQa(journey.tests.map(outcome)) : 'untested' }))
+  // Each test case is judged on its own tests; the journey on all of them together.
+  const journeyReport = journeys.map(journey => {
+    const cases = journey.testCases.map(testCase => ({ id: testCase.id, title: testCase.title, kind: testCase.kind, linked: testCase.tests.length > 0, qa: testCase.tests.length ? criterionQa(testCase.tests.map(outcome)) : 'untested' }))
+    const all = [...journey.tests, ...journey.testCases.flatMap(testCase => testCase.tests)]
+    return { id: journey.id, title: journey.title, linked: all.length > 0, qa: all.length ? criterionQa(all.map(outcome)) : 'untested', cases }
+  })
   if (write && baseline && journeyReport.some(item => item.linked)) {
     const raw = Array.isArray(baseline.document.journeys) ? baseline.document.journeys : []
     for (const item of journeyReport) {
       const target = raw.find(journey => String(journey?.title || '').trim() === item.title)
-      if (target && item.linked) target.qa = item.qa
+      if (!target || !item.linked) continue
+      target.qa = item.qa
+      // Match cases the way normalizeBaseline numbers them: the kept cases, in order.
+      const rawCases = (Array.isArray(target.testCases) ? target.testCases : []).filter(testCase => String(testCase?.title || '').trim() || (Array.isArray(testCase?.steps) && testCase.steps.length))
+      item.cases.forEach((testCase, index) => {
+        if (!rawCases[index]) return
+        if (testCase.linked) rawCases[index].qa = testCase.qa
+        else delete rawCases[index].qa
+      })
     }
     writeFileSync(join(root, BASELINE_PATH), `${JSON.stringify(baseline.stored, null, 2)}\n`)
     try { checkProductBaseline(root, { now }) } catch {}   // rewrites the baseline page with the results
@@ -527,7 +543,12 @@ export function qaReport(result, { ci = false } = {}) {
   if (journeys.length) {
     const JOURNEY_WORD = { pass: '✓ end-to-end test passes', fail: '✗ end-to-end test fails', missing: '? end-to-end test not found', untested: '— no end-to-end test yet' }
     lines.push('', `Journeys: ${journeys.filter(item => item.qa === 'pass').length} of ${journeys.length} pass their end-to-end test`)
-    for (const item of journeys) lines.push(`- **${item.id} ${item.title}**: ${item.linked ? JOURNEY_WORD[item.qa] || JOURNEY_WORD.untested : JOURNEY_WORD.untested}`)
+    const CASE_WORD = { pass: '✓ passes', fail: '✗ fails', missing: '? test not found', untested: 'not run' }
+    for (const item of journeys) {
+      lines.push(`- **${item.id} ${item.title}**: ${item.linked ? JOURNEY_WORD[item.qa] || JOURNEY_WORD.untested : JOURNEY_WORD.untested}`)
+      const cases = item.cases || []
+      if (cases.length) lines.push(`  - Test cases: ${cases.map(testCase => `${testCase.id} ${testCase.linked ? CASE_WORD[testCase.qa] || CASE_WORD.untested : 'not automated'}`).join(' · ')}`)
+    }
   }
   if (result.missingFiles.length) lines.push('', `Test files not found: ${result.missingFiles.join(', ')}`)
   if (result.flaky?.length) lines.push('', `Flaky (failed, then passed on retry): ${result.flaky.join('; ')}`)
@@ -812,8 +833,13 @@ export function verifyReport({ pr, qa, ci }) {
   }
   for (const item of qa.journeys || []) {
     if (!item.linked) continue
-    if (item.qa === 'fail') mustFix.push(`**Journey ${item.id} ${item.title}**: its end-to-end test fails.`)
-    if (item.qa === 'missing') mustFix.push(`**Journey ${item.id} ${item.title}**: its linked end-to-end test wasn't found.`)
+    // Name the test case when the failure is in one; otherwise the journey's own test.
+    const failingCases = (item.cases || []).filter(testCase => testCase.linked && testCase.qa === 'fail')
+    const missingCases = (item.cases || []).filter(testCase => testCase.linked && testCase.qa === 'missing')
+    for (const testCase of failingCases) mustFix.push(`**Journey ${item.id} ${item.title}**: the end-to-end test for ${testCase.id} (${testCase.title}) fails.`)
+    for (const testCase of missingCases) mustFix.push(`**Journey ${item.id} ${item.title}**: the linked end-to-end test for ${testCase.id} (${testCase.title}) wasn't found.`)
+    if (item.qa === 'fail' && !failingCases.length) mustFix.push(`**Journey ${item.id} ${item.title}**: its end-to-end test fails.`)
+    if (item.qa === 'missing' && !missingCases.length && !failingCases.length) mustFix.push(`**Journey ${item.id} ${item.title}**: its linked end-to-end test wasn't found.`)
   }
   for (const file of qa.missingFiles || []) mustFix.push(`Test file \`${file}\` is linked but doesn't exist.`)
 
@@ -833,10 +859,14 @@ export function verifyReport({ pr, qa, ci }) {
   }
   const untested = (qa.report || []).flatMap(item => item.gaps.filter(gap => gap.qa === 'untested').map(gap => `${item.name} ${gap.id}`))
   const noJourneyTest = (qa.journeys || []).filter(item => !item.linked).map(item => `${item.id} ${item.title}`)
-  if (untested.length || noJourneyTest.length) {
+  const notAutomated = (qa.journeys || []).flatMap(item => (item.cases || []).filter(testCase => !testCase.linked).map(testCase => testCase.id))
+  const noCases = (qa.journeys || []).filter(item => !(item.cases || []).length).map(item => item.id)
+  if (untested.length || noJourneyTest.length || notAutomated.length || noCases.length) {
     review.push('### Not tested yet (QA, Priya)')
     if (untested.length) review.push(`- Criteria with no test: ${untested.slice(0, 15).join(', ')}${untested.length > 15 ? ` and ${untested.length - 15} more` : ''}`)
     if (noJourneyTest.length) review.push(`- Journeys with no end-to-end test: ${noJourneyTest.join(', ')}`)
+    if (notAutomated.length) review.push(`- End-to-end test cases not automated yet: ${notAutomated.slice(0, 15).join(', ')}${notAutomated.length > 15 ? ` and ${notAutomated.length - 15} more` : ''}`)
+    if (noCases.length) review.push(`- Journeys with no end-to-end test cases written: ${noCases.join(', ')} (the product-baseline skill writes them)`)
     review.push('')
   }
   if (review.length) lines.push('', '## Worth a look (doesn’t block the merge)', '', ...review)

@@ -21,6 +21,23 @@ export const JOURNEY_QA = Object.freeze(['pass', 'fail', 'missing', 'untested'])
 const testRefs = (value) => (Array.isArray(value) ? value : [])
   .map(test => ({ path: text(test?.path).replace(/^\.?\//, ''), name: text(test?.name) }))
   .filter(test => test.path && test.name)
+// A journey's end-to-end test cases: what QA will walk through the real app to prove the
+// journey works — the main path, alternative starts, and each way it can go wrong. Each
+// case says what must be true first (given), what the tester or test does (steps), and
+// what must be seen (expected). Each case links the automated tests that perform it
+// ({ path, name }); verify runs them and sets the case's qa.
+export const TEST_CASE_KINDS = Object.freeze(['main', 'alternative', 'failure'])
+const testCases = (value) => (Array.isArray(value) ? value : [])
+  .map(item => ({
+    title: text(item?.title),
+    kind: TEST_CASE_KINDS.includes(item?.kind) ? item.kind : 'main',
+    given: text(item?.given),
+    steps: strings(item?.steps),
+    expected: strings(Array.isArray(item?.expected) ? item.expected : [item?.expected]),
+    tests: testRefs(item?.tests),
+    ...(JOURNEY_QA.includes(item?.qa) ? { qa: item.qa } : {}),
+  }))
+  .filter(item => item.title || item.steps.length)
 const slugify = (value) => String(value || '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 60)
 
 // A feature's short id: "owner/repo::goals" and "goals" are both "goals".
@@ -40,12 +57,13 @@ export function normalizeBaseline(result) {
         .filter(step => step.action),
       outcome: text(item?.outcome),
       failures: strings(item?.failures),
+      testCases: testCases(item?.testCases),
       tests: testRefs(item?.tests),
       ...(JOURNEY_QA.includes(item?.qa) ? { qa: item.qa } : {}),
     }))
     .filter(item => item.title || item.steps.length)
     .slice(0, MAX_JOURNEYS)
-    .map((item, index) => ({ id: `J${index + 1}`, ...item }))
+    .map((item, index) => ({ id: `J${index + 1}`, ...item, testCases: item.testCases.map((testCase, caseIndex) => ({ id: `J${index + 1}-T${caseIndex + 1}`, ...testCase })) }))
   const prdRequirements = (Array.isArray(result?.prd?.requirements) ? result.prd.requirements : [])
     .map(item => ({ requirement: text(item?.requirement), source: text(item?.source), status: ALIGNMENT.includes(item?.status) ? item.status : 'not_built', features: [...new Set((Array.isArray(item?.features) ? item.features : []).map(featureKey).filter(Boolean))], note: text(item?.note) }))
     .filter(item => item.requirement)
@@ -67,7 +85,8 @@ export function normalizeBaseline(result) {
 // feature the map doesn't have, a journey through only one feature (that is the
 // feature's own scenario), or an approval on a step that isn't the agent's; a PRD
 // requirement called built or partial with no feature, or citing one the map doesn't
-// have. Coverage — features in no journey, built features the PRD never mentions — is
+// have; a journey with no main-path end-to-end test case, or a test case with no steps or
+// no expected result. Coverage — features in no journey, built features the PRD never mentions — is
 // reported, not a problem: not every feature is on a journey.
 export function checkBaseline(baseline, features) {
   const live = (Array.isArray(features) ? features : []).filter(feature => feature?.status !== 'removed' && feature?.status !== 'deprecated')
@@ -86,7 +105,16 @@ export function checkBaseline(baseline, features) {
     const touched = new Set(journey.steps.map(step => step.feature).filter(key => known.has(key)))
     if (journey.steps.length >= 3 && !unknown.length && touched.size < 2) issues.push('runs through only one feature; make it a scenario in that feature’s spec')
     if (journey.steps.some(step => step.approval && step.actor !== 'agent')) issues.push('marks a step that is not the agent’s as needing approval')
+    if (!journey.testCases.length) issues.push('has no end-to-end test cases (write at least its main path)')
+    else if (!journey.testCases.some(testCase => testCase.kind === 'main')) issues.push('has no main-path test case')
     if (issues.length) problems.push(`${journey.id} ${issues.join(', ')}.`)
+    for (const testCase of journey.testCases) {
+      const caseIssues = []
+      if (!testCase.title) caseIssues.push('has no title')
+      if (testCase.steps.length < 2) caseIssues.push('needs at least two steps')
+      if (!testCase.expected.length) caseIssues.push('says nothing about the expected result')
+      if (caseIssues.length) problems.push(`${testCase.id} ${caseIssues.join(', ')}.`)
+    }
   }
   for (const item of baseline.prd?.requirements || []) {
     const unknown = item.features.filter(key => !known.has(key))
@@ -101,6 +129,10 @@ export function checkBaseline(baseline, features) {
     notOnJourney: [...known.entries()].filter(([key]) => !onJourney.has(key)).map(([, feature]) => feature.name),
     prdRequirements: baseline.prd?.requirements.length || 0,
     prdBuilt: (baseline.prd?.requirements || []).filter(item => item.status === 'built').length,
+    testCases: baseline.journeys.reduce((sum, journey) => sum + journey.testCases.length, 0),
+    automated: baseline.journeys.reduce((sum, journey) => sum + journey.testCases.filter(testCase => testCase.tests.length).length, 0),
+    // Ways a journey can go wrong that no failure test case covers yet.
+    failuresUncovered: baseline.journeys.filter(journey => journey.failures.length > journey.testCases.filter(testCase => testCase.kind === 'failure').length).map(journey => journey.id),
     notInPrd: baseline.prd ? [...known.entries()].filter(([key, feature]) => !inPrd.has(key) && feature.status !== 'partial').map(([, feature]) => feature.name) : [],
   }
   return { passed: problems.length === 0, problems, coverage }
@@ -110,13 +142,31 @@ export function checkBaseline(baseline, features) {
 const anchor = (text) => String(text).toLowerCase().replace(/[`*_~[\]()]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')
 const cell = (value) => String(value || '').replace(/\|/g, '\\|').replace(/\n/g, ' ')
 
-// A journey's end-to-end test, as the baseline page shows it.
+const QA_WORDS = { pass: '✓ passes', fail: '✗ fails', missing: '? test not found' }
+const testNames = (tests) => tests.map(test => `\`${test.path}\` › ${test.name}`).join('; ')
+
+// A journey's end-to-end test, as the baseline page shows it: the journey's own linked
+// tests (older baselines), or a count of its test cases and how many are automated.
 export function journeyTestCell(journey) {
   const tests = Array.isArray(journey?.tests) ? journey.tests : []
+  const cases = Array.isArray(journey?.testCases) ? journey.testCases : []
+  // The journey's own result, else the worst of its automated cases' results.
+  const caseResults = cases.filter(testCase => testCase.tests?.length).map(testCase => testCase.qa)
+  const combined = journey?.qa || ['fail', 'missing'].find(qa => caseResults.includes(qa)) || (caseResults.length && caseResults.every(qa => qa === 'pass') ? 'pass' : '')
+  const word = QA_WORDS[combined] || 'not run yet'
+  if (cases.length) {
+    const automated = cases.filter(testCase => testCase.tests?.length).length
+    const summary = `${cases.length} test case${cases.length === 1 ? '' : 's'}, ${automated} automated`
+    return automated || tests.length ? `${summary} — ${word}` : summary
+  }
   if (!tests.length) return 'none yet'
-  const names = tests.map(test => `\`${test.path}\` › ${test.name}`).join('; ')
-  const word = { pass: '✓ passes', fail: '✗ fails', missing: '? test not found' }[journey.qa] || 'linked, not run yet'
-  return `${word} (${names})`
+  return `${QA_WORDS[journey.qa] || 'linked, not run yet'} (${testNames(tests)})`
+}
+
+// One test case's automated test, as the baseline page shows it.
+export function testCaseCell(testCase) {
+  if (!testCase?.tests?.length) return 'not automated yet'
+  return `${QA_WORDS[testCase.qa] || 'not run yet'} (${testNames(testCase.tests)})`
 }
 
 // Mermaid diagrams for the journeys. Labels lose the characters Mermaid would read as
@@ -196,6 +246,8 @@ export function baselineMarkdown(baseline, features, { checked = null, writtenAt
     `**${live.length}** features`,
     `specs: **${specCount('complete')}** checked against the code, ${specCount('in_progress') + specCount('not_checked')} in progress, ${specCount('not_started')} not written`,
   ]
+  const caseCount = baseline.journeys.reduce((sum, journey) => sum + journey.testCases.length, 0)
+  if (caseCount) glance.push(`end-to-end test cases: **${caseCount}**, ${baseline.journeys.reduce((sum, journey) => sum + journey.testCases.filter(testCase => testCase.tests.length).length, 0)} automated`)
   if (baseline.prd?.requirements.length) glance.push(`PRD: **${baseline.prd.requirements.filter(item => item.status === 'built').length}** of ${baseline.prd.requirements.length} requirements built`)
   out.push(`**At a glance:** ${glance.join(' · ')}`, '')
 
@@ -214,7 +266,7 @@ export function baselineMarkdown(baseline, features, { checked = null, writtenAt
         journey.user && `- **Who:** ${journey.user}`,
         journey.goal && `- **Goal:** ${journey.goal}`,
         journey.trigger && `- **Starts when:** ${journey.trigger}`,
-        `- **End-to-end test:** ${journeyTestCell(journey)}`,
+        `- **End-to-end tests:** ${journeyTestCell(journey)}`,
       ].filter(Boolean), '')
       if (journey.steps.length) out.push('```mermaid', journeyDiagram(journey, nameOf, { agentLane: name }), '```', '')
       if (journey.steps.length) {
@@ -232,6 +284,18 @@ export function baselineMarkdown(baseline, features, { checked = null, writtenAt
       }
       if (journey.outcome) out.push(`**Done when:** ${journey.outcome}`, '')
       if (journey.failures.length) out.push('**When it goes wrong:**', '', ...journey.failures.map(item => `- ${item}`), '')
+      if (journey.testCases.length) {
+        const KIND = { main: 'Main path', alternative: 'Alternative', failure: 'Failure' }
+        out.push(`**End-to-end test cases**`, '', '| ID | Test case | Type | Automated test |', '|---|---|---|---|')
+        for (const testCase of journey.testCases) out.push(`| ${testCase.id} | ${cell(testCase.title)} | ${KIND[testCase.kind]} | ${cell(testCaseCell(testCase))} |`)
+        out.push('')
+        for (const testCase of journey.testCases) {
+          out.push(`**${testCase.id} ${testCase.title}**`, '')
+          if (testCase.given) out.push(`_Given_ ${testCase.given}`, '')
+          out.push(...testCase.steps.map((step, index) => `${index + 1}. ${step}`), '')
+          if (testCase.expected.length) out.push('_Expect:_', '', ...testCase.expected.map(item => `- ${item}`), '')
+        }
+      }
     }
   }
 
@@ -268,9 +332,11 @@ export function baselineMarkdown(baseline, features, { checked = null, writtenAt
 
   // Gaps in one place: features no journey uses, and what still needs a decision.
   const notOnJourney = checked?.coverage.notOnJourney || []
-  if (notOnJourney.length || baseline.openQuestions.length) {
+  const failuresUncovered = checked?.coverage.failuresUncovered || []
+  if (notOnJourney.length || failuresUncovered.length || baseline.openQuestions.length) {
     out.push('## Gaps and open questions', '')
     if (notOnJourney.length) out.push(`**Features on no journey:** ${notOnJourney.join(', ')}. Supporting features, or journeys still to write.`, '')
+    if (failuresUncovered.length) out.push(`**Failures with no test case:** ${failuresUncovered.join(', ')} list more ways to go wrong than they have failure test cases.`, '')
     if (baseline.openQuestions.length) out.push(...baseline.openQuestions.map(item => `- ${item}`), '')
   }
   if (checked && !checked.passed) out.push('## Needs review', '', ...checked.problems.map(item => `- ${item}`), '')
